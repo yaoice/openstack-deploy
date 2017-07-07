@@ -1,0 +1,52 @@
+---
+
+rabbitmq_port: 5672
+rabbitmq_ssl_port: 5671
+rabbitmq_cluster_port: 25672
+rabbitmq_management_port: 15672
+rabbitmq_epmd_port: 4369
+
+mariadb_port: 3306
+mariadb_wsrep_port: "4567"
+mariadb_ist_port: "4568"
+mariadb_sst_port: "4444"
+
+memcached_port: 11211
+
+haproxy_stats_port: "1984"
+
+keystone_public_port: "5000"
+keystone_admin_port: "35357"
+
+glance_api_port: "9292"
+glance_registry_port: "9191"
+
+nova_api_port: "8774"
+nova_metadata_port: "8775"
+nova_novncproxy_port: "6080"
+nova_spicehtml5proxy_port: "6082"
+nova_serialproxy_port: "6083"
+
+placement_api_port: "8780"
+
+ironic_api_port: "6385"
+
+cinder_api_port: "8776"
+
+neutron_server_port: "9696"
+
+swift_proxy_server_port: "8080"
+swift_object_server_port: "6000"
+swift_account_server_port: "6001"
+swift_container_server_port: "6002"
+swift_rsync_port: "10873"
+
+octavia_api_port: "9876"
+octavia_health_manager_port: "5555"
+
+designate_api_port: "9001"
+designate_bind_port: "53"
+designate_mdns_port: "5354"
+designate_rndc_port: "953"
+
+horizon_port: "80"

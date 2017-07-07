@@ -1,0 +1,36 @@
+---
+
+- name: check the journal device is partition
+  shell: "readlink -f {{ item.journal }} | egrep '/dev/([hsv]d[a-z]{1,2}|cciss/c[0-9]d[0-9]p|nvme[0-9]n[0-9]p)[0-9]{1,2}|fio[a-z]{1,2}[0-9]{1,2}$'"
+  with_items: "{{ ceph_osd[inventory_hostname].values() }}"
+  changed_when: false
+  failed_when: false
+  check_mode: no
+  register: journal_ispartition_results
+  when:
+    - item.journal is defined
+
+- name: check the partition status of the journal devices
+  shell: "parted --script {{ item.1.journal }} print > /dev/null 2>&1"
+  with_together:
+    - "{{ journal_ispartition_results.results }}"
+    - "{{ ceph_osd[inventory_hostname].values()|unique }}"
+  changed_when: false
+  failed_when: false
+  check_mode: no
+  register: journal_partition_status
+  when:
+    - item.0.rc != 0
+    - item.1.journal is defined
+
+- name: fix partitions gpt header or labels of the journal devices
+  shell: "sgdisk --zap-all --clear --mbrtogpt -- {{ item.1.journal }} || sgdisk --zap-all --clear --mbrtogpt -- {{ item.1.journal }}"
+  with_together:
+    - "{{ journal_partition_status.results }}"
+    - "{{ ceph_osd[inventory_hostname].values()|unique }}"
+  changed_when: false
+  when:
+    - not item.0.get("skipped")
+    - item.0.get("rc", 0) != 0
+    - item.1.journal is defined
+

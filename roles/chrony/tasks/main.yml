@@ -1,0 +1,11 @@
+---
+
+- include: chrony_install.yml
+
+- include: chrony_config.yml
+
+- include: chrony_services.yml
+
+- name: Flush handlers
+  meta: flush_handlers
+

@@ -1,0 +1,12 @@
+---
+
+- name: Install haproxy packages
+  package:
+    name: "{{ item }}"
+    state: "{{ haproxy_package_state }}"
+  register: install_packages
+  until: install_packages | success
+  retries: 5
+  delay: 2
+  with_items: "{{ haproxy_distro_packages }}"
+

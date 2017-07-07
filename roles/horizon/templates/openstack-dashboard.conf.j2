@@ -1,0 +1,47 @@
+Listen {{ api_interface_address }}:{{ horizon_port }}
+
+<VirtualHost *:{{ horizon_port }}>
+    ServerName horizon
+#    RewriteEngine On
+#    RewriteCond %{HTTPS} !=on
+#    RewriteRule ^/?(.*) https://%{HTTP_HOST}/$1 [R,L]
+# RedirectMatch rules
+    RedirectMatch permanent  ^/$ /dashboard
+
+    LogLevel  info
+    ErrorLog  /var/log/httpd/horizon_error.log
+    CustomLog /var/log/httpd/horizon_access.log combined
+    Options +FollowSymLinks
+
+    WSGIScriptAlias /dashboard /usr/share/openstack-dashboard/openstack_dashboard/wsgi/django.wsgi
+    WSGIDaemonProcess dashboard processes={{ openstack_service_workers }} threads=1 user=apache group=apache display-name=%{GROUP}
+    WSGIProcessGroup dashboard
+    WSGIApplicationGroup dashboard
+
+    <Directory /usr/share/openstack-dashboard/openstack_dashboard/wsgi>
+      <Files django.wsgi>
+        Order allow,deny
+        allow from all
+        Require all granted
+      </Files>
+    </Directory>
+
+    Alias /dashboard/static /usr/share/openstack-dashboard/static
+    Alias /dashboard/media /usr/share/openstack-dashboard/media
+
+    <Directory /usr/share/openstack-dashboard/static>
+      Options -FollowSymlinks
+      AllowOverride None
+      Order allow,deny
+      allow from all
+      Require all granted
+    </Directory>
+
+    <Directory /usr/share/openstack-dashboard/media>
+      Options -FollowSymlinks
+      AllowOverride None
+      Order allow,deny
+      allow from all
+      Require all granted
+    </Directory>
+</VirtualHost>

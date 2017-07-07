@@ -1,0 +1,121 @@
+---
+
+#Note: ensure keystone use os-client-config 1.27.0
+- name: Install shade packages
+  pip:
+    name: "{{ item.name }}"
+    version: "{{ item.version }}"
+    state: "forcereinstall"
+  with_items:
+    - { 'name': os-client-config, 'version': 1.27.0 }
+    - { 'name': requests, 'version': 2.11.1 }
+  register: install_shade
+  until: install_shade|success
+  retries: 5
+  delay: 2
+  run_once: True
+  delegate_to: "{{ groups['keystone'][0] }}"
+
+#Note: ensure keystone use os-client-config 1.27.0
+- name: Ensure os_client_config identity_api_version to 3
+  replace:
+     path: "/usr/lib/python2.7/site-packages/os_client_config/defaults.json"
+     regexp: '"identity_api_version": "2.0",'
+     replace: '"identity_api_version": "3",'
+  run_once: True
+  changed_when: False
+  delegate_to: "{{ groups['keystone'][0] }}"
+
+- name: Add the bridge modules
+  modprobe:
+    name: bridge
+    state: present
+  when:
+    - inventory_hostname in groups['compute']
+
+- name: Setting sysctl values
+  sysctl: name={{ item.name }} value={{ item.value }} sysctl_set=yes
+  with_items:
+    - { name: "net.bridge.bridge-nf-call-iptables", value: 1}
+    - { name: "net.bridge.bridge-nf-call-ip6tables", value: 1}
+    - { name: "net.ipv4.conf.all.rp_filter", value: 0}
+    - { name: "net.ipv4.conf.default.rp_filter", value: 0}
+  when:
+    - inventory_hostname in groups['compute']
+
+- name: Apply nova config
+  vars:
+    services_require_nova_conf:
+      - placement-api
+      - nova-api
+      - nova-compute
+      - nova-compute-ironic
+      - nova-conductor
+      - nova-consoleauth
+      - nova-novncproxy
+      - nova-serialproxy
+      - nova-scheduler
+      - nova-spicehtml5proxy
+    service_name: "{{ item.key }}"
+  template:
+    src: "nova.conf.j2"
+    dest: "/etc/nova/nova.conf"
+    mode: "0644"
+    owner: "nova"
+    group: "nova"
+  when:
+    - inventory_hostname in groups[item.value.group]
+    - item.value.enabled | bool
+    - item.key in services_require_nova_conf
+  with_dict: "{{ nova_services }}"
+  notify:
+    - "Restart {{ item.key }}"
+
+- name: Copying over libvirt configuration
+  vars:
+    service: "{{ nova_services['nova-libvirt'] }}"
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  when:
+    - inventory_hostname in groups[service.group]
+    - service.enabled | bool
+  with_items:
+    - { src: "qemu.conf.j2", dest: "/etc/libvirt/qemu.conf" }
+    - { src: "libvirtd.conf.j2", dest: "/etc/libvirt/libvirtd.conf" }
+    - { src: "sys_libvirtd.conf.j2", dest: "/etc/sysconfig/libvirtd" }
+  notify:
+    - Restart nova-libvirt
+
+- name: Comment Listen config in httpd.conf
+  lineinfile:
+    path: "{{ item.path }}"
+    state: absent
+    regexp: "{{ item.regexp }}"
+  with_items:
+    - { path: "/etc/httpd/conf/httpd.conf", regexp: "^Listen 80" }
+    - { path: "/etc/httpd/conf.d/ssl.conf", regexp: "^Listen 443" }
+
+- name: Remove placement wsgi conf file and Update placement log privilege
+  file:
+    path: "{{ item.path }}"
+    state: "{{ item.state }}"
+    owner: "nova"
+    group: "nova"
+  with_items:
+    - { path: "/var/log/nova/nova-placement-api.log", state: 'touch' }
+    - { path: "/var/log/nova/nova-placement-api-access.log", state: 'touch' }
+    - { path: "/etc/httpd/conf.d/00-nova-placement-api.conf", state: 'absent' }
+
+- name: Copying over placement-api wsgi configuration
+  vars:
+    service: "{{ nova_services['placement-api'] }}"
+  template:
+    src: "placement-api-wsgi.conf.j2"
+    dest: "/etc/httpd/conf.d/placement-api-wsgi.conf"
+  when:
+    - inventory_hostname in groups[service.group]
+    - service.enabled | bool
+  notify:
+    - Restart placement-api
+

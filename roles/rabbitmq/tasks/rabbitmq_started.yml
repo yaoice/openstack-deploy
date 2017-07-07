@@ -1,0 +1,19 @@
+
+- name: "Ensure RabbitMQ node [0] is started"
+  service:
+    name: rabbitmq-server
+    state: started
+    enabled: true
+  failed_when: false
+  when: >
+    inventory_hostname == rabbitmq_primary_cluster_node
+
+- name: "Ensure RabbitMQ nodes [1:] are started"
+  service:
+    name: rabbitmq-server
+    state: started
+    enabled: true
+  failed_when: false
+  when: >
+    inventory_hostname != rabbitmq_primary_cluster_node
+

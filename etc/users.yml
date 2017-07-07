@@ -1,0 +1,21 @@
+---
+
+haproxy_user: "openstack"
+galera_root_user: "root"
+rabbitmq_user: "openstack"
+
+keystone_database_user: "keystone"
+glance_database_user: "glance"
+nova_database_user: "nova"
+nova_api_database_user: "nova_api"
+cinder_database_user: "cinder"
+neutron_database_user: "neutron"
+
+glance_keystone_user: "glance"
+nova_keystone_user: "nova"
+placement_keystone_user: "placement"
+ironic_keystone_user: "ironic"
+cinder_keystone_user: "cinder"
+neutron_keystone_user: "neutron"
+designate_keystone_user: "designate"
+

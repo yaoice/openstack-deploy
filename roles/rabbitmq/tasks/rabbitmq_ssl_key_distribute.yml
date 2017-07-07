@@ -1,0 +1,29 @@
+- name: Distribute self signed ssl key
+  copy:
+    dest: "{{ rabbitmq_ssl_key }}"
+    content: "{{ hostvars[groups['rabbitmq'][0]]['rabbitmq_ssl_key_fact'] | b64decode }}"
+    owner: "rabbitmq"
+    group: "rabbitmq"
+    mode: "0640"
+
+- name: Distribute self signed ssl cert
+  copy:
+    dest: "{{ rabbitmq_ssl_cert }}"
+    content: "{{ hostvars[groups['rabbitmq'][0]]['rabbitmq_ssl_cert_fact'] | b64decode }}"
+    owner: "rabbitmq"
+    group: "rabbitmq"
+    mode: "0640"
+
+- name: Ensure rabbitmq user owns the self-signed key and certificate
+  file:
+    path: "{{ item }}"
+    owner: rabbitmq
+    group: rabbitmq
+  with_items:
+    - "{{ rabbitmq_ssl_key }}"
+    - "{{ rabbitmq_ssl_cert }}"
+
+- name: Ensure /etc/rabbitmq is set to the default mode of 0755
+  file:
+    path: /etc/rabbitmq
+    mode: 0755

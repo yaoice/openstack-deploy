@@ -1,0 +1,11 @@
+---
+
+horizon_package_state: "present"
+
+horizon_distro_packages:
+   - openstack-dashboard
+   - httpd
+   - mod_wsgi
+
+horizon_logging_debug: "{{ openstack_logging_debug }}"
+

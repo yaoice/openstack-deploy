@@ -1,0 +1,23 @@
+---
+
+ceph_package_state: "latest"
+
+ceph_keyring_admin: "/etc/ceph/ceph.client.admin.keyring"
+ceph_keyring_mon: "/etc/ceph/ceph.client.mon.keyring"
+ceph_keyring_rgw: "/etc/ceph/ceph.client.radosgw.keyring"
+ceph_monmap: "/etc/ceph/ceph.monmap"
+ceph_dir: "/var/lib/ceph/mon/ceph-{{ hostvars[inventory_hostname]['ansible_' + storage_interface]['ipv4']['address'] }}"
+
+ceph_distro_packages:
+  - btrfs-progs
+  - ceph
+  - ceph-radosgw
+  - e2fsprogs
+  - hdparm
+  - parted
+  - xfsprogs
+  - ceph-fuse
+
+ceph_conf_template: ceph.conf.j2
+
+ceph_conf_dest: /etc/ceph/ceph.conf

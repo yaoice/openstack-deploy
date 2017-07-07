@@ -1,0 +1,67 @@
+---
+
+- name: Restart nova-libvirt
+  systemd:
+    name: "libvirtd"
+    state: "restarted"
+    enabled: yes
+
+- name:  Restart placement-api
+  systemd:
+    name: "httpd"
+    state: "restarted"
+    enabled: yes
+
+- name:  Restart nova-api
+  systemd:
+    name: "openstack-nova-api"
+    state: "restarted"
+    enabled: yes
+
+- name:  Restart nova-consoleauth
+  systemd:
+    name: "openstack-nova-consoleauth"
+    state: "restarted"
+    enabled: yes
+
+- name:  Restart nova-novncproxy
+  systemd:
+    name: "openstack-nova-novncproxy"
+    state: "restarted"
+    enabled: yes
+
+- name:  Restart nova-scheduler
+  systemd:
+    name: "openstack-nova-scheduler"
+    state: "restarted"
+    enabled: yes
+
+- name:  Restart nova-spicehtml5proxy
+  systemd:
+    name: "openstack-nova-spicehtml5proxy"
+    state: "restarted"
+    enabled: yes
+
+- name:  Restart nova-serialproxy
+  systemd:
+    name: "openstack-nova-serialproxy"
+    state: "restarted"
+    enabled: yes
+
+- name:  Restart nova-conductor
+  systemd:
+    name: "openstack-nova-conductor"
+    state: "restarted"
+    enabled: yes
+
+- name:  Restart nova-compute
+  systemd:
+    name: "openstack-nova-compute"
+    state: "restarted"
+    enabled: yes
+
+- name:  Restart nova-compute-ironic
+  systemd:
+    name: "openstack-nova-compute"
+    state: "restarted"
+    enabled: yes

@@ -1,0 +1,11 @@
+---
+
+- name: Apply ceph config
+  template:
+    src: "{{ ceph_conf_template }}"
+    dest: "{{ ceph_conf_dest }}"
+    owner: "ceph"
+    group: "ceph"
+    mode: "0644"
+  notify:
+    - Restart ceph monitor

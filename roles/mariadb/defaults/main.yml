@@ -1,0 +1,28 @@
+
+galera_package_state: "latest"
+
+galera_cluster_members: "{{ groups['mariadb'] }}"
+galera_server_bootstrap_node: "{{ galera_cluster_members[0] }}"
+
+galera_running_and_bootstrapped: false
+
+galera_cluster_name: openstack_galera_cluster
+
+galera_wsrep_slave_threads_max: 16
+galera_wsrep_slave_threads: "{{ [[ansible_processor_vcpus|default(2), 2] | max, galera_wsrep_slave_threads_max] | min }}"
+galera_wsrep_sst_auth_user: "{{ galera_root_user }}"
+galera_wsrep_sst_auth_password: "{{ galera_root_password  }}"
+
+# xtrabackup parallel/compression/sync threads
+galera_xtrabackup_threads: 5
+
+galera_distro_packages:
+  - galera
+  - mariadb-server-galera
+  - mariadb
+  - percona-xtrabackup-24
+  - socat
+  - qpress
+  - python-pip
+  - MySQL-python
+  - python2-PyMySQL

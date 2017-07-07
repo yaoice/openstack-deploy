@@ -1,0 +1,189 @@
+---
+
+# Core services
+enable_chrony: "yes"
+enable_haproxy: "yes"
+enable_rabbitmq: "yes"
+enable_mariadb: "yes"
+enable_memcached: "yes"
+enable_keystone: "yes"
+enable_glance: "yes"
+enable_neutron: "yes"
+enable_nova: "yes"
+
+# Additional optional services
+enable_ceph: "yes"
+enable_ceph_rgw: "no"
+enable_cinder: "yes"
+enable_cinder_backend_lvm: "no"
+enable_cinder_backend_nfs: "no"
+enable_ceilometer: "no"
+enable_horizon: "yes"
+enable_horizon_neutron_lbaas: "{{ enable_neutron_lbaas | bool }}"
+enable_searchlight: "no"
+enable_designate: "no"
+enable_watcher: "no"
+enable_ironic: "no"
+enable_cadf_notifications: "no"
+enable_nova_serialconsole_proxy: "no"
+enable_nova_fake: "no"
+enable_neutron_vpnaas: "no"
+enable_neutron_dvr: "no"
+enable_neutron_lbaas: "no"
+enable_neutron_fwaas: "no"
+enable_neutron_qos: "no"
+enable_neutron_agent_ha: "no"
+enable_octavia: "no"
+enable_tacker: "no"
+
+# Integrate ceph rados object gateway with openstack keystone
+enable_ceph_rgw_keystone: "no"
+
+
+####################
+# Networking options
+####################
+network_interface: "eth0"
+neutron_external_interface: "eth1"
+external_vip_interface: "{{ network_interface }}"
+api_interface: "{{ network_interface }}"
+storage_interface: "{{ network_interface }}"
+cluster_interface: "{{ network_interface }}"
+vlan_interface: "{{ neutron_external_interface }}"
+tunnel_interface: "{{ network_interface }}"
+tunnel_interface_address: "{{ hostvars[inventory_hostname]['ansible_' + tunnel_interface]['ipv4']['address'] }}"
+
+api_interface_address:  "{{ hostvars[inventory_hostname]['ansible_' + api_interface]['ipv4']['address'] }}"
+
+# Valid options are [ openvswitch, linuxbridge, sfc ]
+neutron_plugin_agent: "openvswitch"
+
+#internal_vip_address: "{{ api_interface_address }}"
+internal_vip_address: "172.16.214.250"
+external_vip_address: "{{ internal_vip_address }}"
+
+enable_tls_external: "no"
+haproxy_enable_external_vip: "{{ 'no' if external_vip_address == internal_vip_address else 'yes' }}"
+
+neutron_bridge_name: "br-ex"
+neutron_l3_bridge_auto: "yes"
+neutron_vlan_bridge_auto: "no"
+
+####################
+# keepalived options
+####################
+keepalived_virtual_router_id: "89"
+
+
+################
+# Chrony options
+################
+# A list contains ntp servers
+external_ntp_servers:
+  - 0.pool.ntp.org
+  - 1.pool.ntp.org
+  - 2.pool.ntp.org
+  - 3.pool.ntp.org
+
+####################
+## Keystone options
+####################
+public_protocol: "http"
+internal_protocol: "http"
+admin_protocol: "http"
+keystone_admin_url: "{{ admin_protocol }}://{{ internal_vip_address }}:{{ keystone_admin_port }}/v3"
+keystone_internal_url: "{{ internal_protocol }}://{{ internal_vip_address }}:{{ keystone_public_port }}/v3"
+keystone_public_url: "{{ public_protocol }}://{{ external_vip_address }}:{{ keystone_public_port }}/v3"
+
+# Valid options are [ uuid, fernet ]
+keystone_token_provider: "uuid"
+fernet_token_expiry: 86400
+keystone_default_user_role: "_member_"
+
+openstack_auth:
+    auth_url: "{{ admin_protocol }}://{{ internal_vip_address }}:{{ keystone_admin_port }}"
+    username: "admin"
+    password: "{{ keystone_admin_password }}"
+    project_name: "admin"
+    domain_name: "default"
+
+openstack_region_name: "RegionOne"
+multiple_regions_names:
+    - "{{ openstack_region_name }}"
+
+#######################
+## Glance options
+########################
+glance_backend_ceph: "{{ enable_ceph }}"
+glance_backend_vmware: "no"
+
+#######################
+## Nova options
+########################
+# Valid options are [ novnc, spice ]
+nova_console: "novnc"
+nova_backend_ceph: "{{ enable_ceph }}"
+nova_backend: "{{ 'rbd' if nova_backend_ceph | bool else 'default' }}"
+
+#################################
+## Cinder options
+##################################
+cinder_backend_ceph: "{{ enable_ceph }}"
+cinder_volume_group: "cinder-volumes"
+cinder_backup_driver: "nfs"
+cinder_backup_share: ""
+cinder_backup_mount_options_nfs: ""
+
+################
+## Ceph options
+#################
+ceph_osd:
+  test-aio-1:
+      /dev/vdb:
+         journal:
+      /dev/vdc:
+         journal:
+      /dev/vdd:
+         journal:
+  test-aio-2:
+      /dev/vdb:
+         journal:
+      /dev/vdc:
+         journal:
+      /dev/vdd:
+         journal:
+  test-aio-3:
+      /dev/vdb:
+         journal:
+      /dev/vdc:
+         journal:
+      /dev/vdd:
+         journal:
+
+ceph_glance_pool_name: "images"
+ceph_nova_pool_name: "vms"
+ceph_cinder_pool_name: "volumes"
+ceph_cinder_backup_pool_name: "backups"
+
+ceph_enable_cache: "no"
+# Valid options are [ forward, none, writeback ]
+ceph_cache_mode: "writeback"
+
+# Valid options are [ erasure, replicated ]
+ceph_pool_type: "replicated"
+
+ceph_erasure_profile: "k=4 m=2 ruleset-failure-domain=host"
+ceph_rule: "default host {{ 'indep' if ceph_pool_type == 'erasure' else 'firstn' }}"
+ceph_cache_rule: "cache host firstn"
+
+
+####################
+## OpenStack options
+#####################
+openstack_logging_debug: "False"
+openstack_service_workers: "{{ [ansible_processor_vcpus, 5]|min }}"
+
+#####################
+## Database options
+#####################
+database_address: "{{ internal_vip_address}}"

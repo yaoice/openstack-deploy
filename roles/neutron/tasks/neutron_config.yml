@@ -1,0 +1,253 @@
+
+---
+- name: Setting sysctl values
+  vars:
+    neutron_l3_agent: "{{ neutron_services['neutron-l3-agent'] }}"
+    neutron_vpnaas_agent: "{{ neutron_services['neutron-vpnaas-agent'] }}"
+  sysctl: name={{ item.name }} value={{ item.value }} sysctl_set=yes
+  with_items:
+    - { name: "net.ipv4.ip_forward", value: 1}
+    - { name: "net.ipv4.conf.all.rp_filter", value: 0}
+    - { name: "net.ipv4.conf.default.rp_filter", value: 0}
+  when:
+    - (neutron_l3_agent.enabled | bool )
+      or (neutron_vpnaas_agent.enabled | bool)
+
+- name: Update ovs agent systemd
+  replace:
+     path: "/usr/lib/systemd/system/neutron-openvswitch-agent.service"
+     regexp: 'openvswitch_agent.ini'
+     replace: 'ml2_conf.ini'
+  when: 
+    - inventory_hostname in groups['openvswitch']
+    - neutron_plugin_agent == 'openvswitch'
+
+- name: Update linuxbridge agent systemd
+  replace:
+     path: "/usr/lib/systemd/system/neutron-linuxbridge-agent.service"
+     regexp: 'linuxbridge_agent.ini'
+     replace: 'ml2_conf.ini'
+  when:
+    - inventory_hostname in groups['openvswitch']
+    - neutron_plugin_agent == 'linuxbridge'
+
+- name: daemon reload
+  command: systemctl daemon-reload
+  when:
+    - inventory_hostname in groups['openvswitch']
+
+- name: Copying over neutron.conf
+  vars:
+    service_name: "{{ item.key }}"
+    services_need_neutron_conf:
+      - "neutron-dhcp-agent"
+      - "neutron-l3-agent"
+      - "neutron-linuxbridge-agent"
+      - "neutron-metadata-agent"
+      - "neutron-openvswitch-agent"
+      - "neutron-server"
+      - "neutron-lbaas-agent"
+      - "neutron-vpnaas-agent"
+  template:
+    src: "neutron.conf.j2"
+    dest: "/etc/neutron/neutron.conf"
+    owner: "neutron"
+    group: "neutron"
+  when:
+    - item.value.enabled | bool
+    - item.value.host_in_groups | bool
+    - item.key in services_need_neutron_conf
+  with_dict: "{{ neutron_services }}"
+  notify:
+    - "Restart {{ item.key }}"
+
+- name: Copying over neutron_lbaas.conf
+  vars:
+    service_name: "{{ item.key }}"
+    services_need_neutron_lbaas_conf:
+      - "neutron-server"
+      - "neutron-lbaas-agent"
+  template:
+    src: "neutron_lbaas.conf.j2"
+    dest: "/etc/neutron/neutron_lbaas.conf"
+    owner: "neutron"
+    group: "neutron"
+  register: neutron_lbaas_confs
+  when:
+    - item.value.enabled | bool
+    - item.value.host_in_groups | bool
+    - item.key in services_need_neutron_lbaas_conf
+  with_dict: "{{ neutron_services }}"
+  notify:
+    - "Restart {{ item.key }}"
+
+- name: Copying over neutron_vpnaas.conf
+  vars:
+    service_name: "neutron-server"
+    neutron_server: "{{ neutron_services[service_name] }}"
+  template:
+    src: "neutron_vpnaas.conf.j2"
+    dest: "/etc/neutron/neutron_vpnaas.conf"
+    owner: "neutron"
+    group: "neutron"
+  register: neutron_vpnaas_conf
+  when:
+    - neutron_server.enabled | bool
+    - neutron_server.host_in_groups | bool
+  notify:
+    - "Restart {{ service_name }}"
+
+- name: Copying over ml2_conf.ini
+  vars:
+    service_name: "{{ item.key }}"
+    services_need_ml2_conf_ini:
+      - "neutron-dhcp-agent"
+      - "neutron-l3-agent"
+      - "neutron-linuxbridge-agent"
+      - "neutron-lbaas-agent"
+      - "neutron-metadata-agent"
+      - "neutron-openvswitch-agent"
+      - "neutron-server"
+      - "neutron-vpnaas-agent"
+  template:
+    src: "ml2_conf.ini.j2"
+    dest: "/etc/neutron/plugins/ml2/ml2_conf.ini"
+    owner: "neutron"
+    group: "neutron"
+  register: neutron_ml2_confs
+  when:
+    - item.key in services_need_ml2_conf_ini
+    - item.value.enabled | bool
+    - item.value.host_in_groups | bool
+  with_dict: "{{ neutron_services }}"
+  notify:
+    - "Restart {{ item.key }}"
+
+- name: Link for ml2_conf.ini
+  file:
+    src: "/etc/neutron/plugins/ml2/ml2_conf.ini"
+    dest: "/etc/neutron/plugin.ini"
+    state: link
+  when: inventory_hostname in groups['neutron-server']
+  notify:
+    - "Restart neutron-server"
+
+- name: Copying over dhcp_agent.ini
+  vars:
+    service_name: "neutron-dhcp-agent"
+    neutron_dhcp_agent: "{{ neutron_services[service_name] }}"
+  template:
+    src: "dhcp_agent.ini.j2"
+    dest: "/etc/neutron/dhcp_agent.ini"
+    owner: "neutron"
+    group: "neutron"
+  register: dhcp_agent_ini
+  when:
+    - neutron_dhcp_agent.enabled | bool
+    - neutron_dhcp_agent.host_in_groups | bool
+  notify:
+    - "Restart {{ service_name }}"
+
+- name: Copying over dnsmasq.conf
+  vars:
+    service_name: "neutron-dhcp-agent"
+    neutron_dhcp_agent: "{{ neutron_services[service_name] }}"
+  template:
+    src: "dnsmasq.conf.j2"
+    dest: "/etc/neutron/dnsmasq.conf"
+    owner: "neutron"
+    group: "neutron"
+  register: dnsmasq_conf
+  when:
+    - neutron_dhcp_agent.enabled | bool
+    - neutron_dhcp_agent.host_in_groups | bool
+  notify:
+    - "Restart {{ service_name }}"
+
+- name: Copying over l3_agent.ini
+  vars:
+    service_name: "{{ item.key }}"
+    services_need_l3_agent_ini:
+      - "neutron-l3-agent"
+      - "neutron-vpnaas-agent"
+  template:
+    src: "l3_agent.ini.j2"
+    dest: "/etc/neutron/l3_agent.ini"
+    owner: "neutron"
+    group: "neutron"
+  register: neutron_l3_agent_inis
+  when:
+    - item.key in services_need_l3_agent_ini
+    - item.value.enabled | bool
+    - item.value.host_in_groups | bool
+  with_dict: "{{ neutron_services }}"
+  notify:
+    - "Restart {{ item.key }}"
+
+- name: Copying over fwaas_driver.ini
+  vars:
+    service_name: "{{ item.key }}"
+    services_need_fwaas_driver_ini:
+      - "neutron-l3-agent"
+      - "neutron-vpnaas-agent"
+  template:
+    src: "fwaas_driver.ini.j2"
+    dest: "/etc/neutron/fwaas_driver.ini.j2"
+    owner: "neutron"
+    group: "neutron"
+  register: neutron_fwaas_driver_inis
+  when:
+    - item.key in services_need_fwaas_driver_ini
+    - item.value.enabled | bool
+    - item.value.host_in_groups | bool
+  with_dict: "{{ neutron_services }}"
+  notify:
+    - "Restart {{ item.key }}"
+
+- name: Copying over metadata_agent.ini
+  vars:
+    service_name: "neutron-metadata-agent"
+    neutron_metadata_agent: "{{ neutron_services[service_name] }}"
+  template:
+    src: "metadata_agent.ini.j2"
+    dest: "/etc/neutron/metadata_agent.ini"
+    owner: "neutron"
+    group: "neutron"
+  register: neutron_metadata_agent_ini
+  when:
+    - neutron_metadata_agent.enabled | bool
+    - neutron_metadata_agent.host_in_groups | bool
+  notify:
+    - "Restart {{ service_name }}"
+
+- name: Copying over lbaas_agent.ini
+  vars:
+    service_name: "neutron-lbaas-agent"
+    neutron_lbaas_agent: "{{ neutron_services['neutron-lbaas-agent'] }}"
+  template:
+    src: "lbaas_agent.ini.j2"
+    dest: "/etc/neutron/lbaas_agent.ini"
+    owner: "neutron"
+    group: "neutron"
+  register: neutron_lbaas_agent_ini
+  when:
+    - neutron_lbaas_agent.enabled | bool
+    - neutron_lbaas_agent.host_in_groups | bool
+  notify:
+    - "Restart {{ service_name }}"
+
+- name: Copying over vpnaas_agent.ini
+  vars:
+    service_name: "neutron-vpnaas-agent"
+    neutron_vpnaas_agent: "{{ neutron_services['neutron-vpnaas-agent'] }}"
+  template:
+    src: "vpnaas_agent.ini.j2"
+    dest: "/etc/neutron/vpnaas_agent.ini"
+    owner: "neutron"
+    group: "neutron"
+  register: neutron_vpnaas_agent_ini
+  when:
+    - neutron_vpnaas_agent.enabled | bool
+    - neutron_vpnaas_agent.host_in_groups | bool
+  notify:
+    - "Restart {{ service_name }}"

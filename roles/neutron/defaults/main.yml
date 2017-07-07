@@ -1,0 +1,186 @@
+---
+
+neutron_package_state: "present"
+
+####################
+# OpenStack
+####################
+dhcp_agents_per_network: 2
+min_l3_agents_per_router: 2
+max_l3_agents_per_router: 3
+
+neutron_admin_endpoint: "{{ admin_protocol }}://{{ internal_vip_address }}:{{ neutron_server_port }}"
+neutron_internal_endpoint: "{{ internal_protocol }}://{{ internal_vip_address }}:{{ neutron_server_port }}"
+neutron_public_endpoint: "{{ public_protocol }}://{{ external_vip_address }}:{{ neutron_server_port }}"
+
+neutron_logging_debug: "{{ openstack_logging_debug }}"
+
+neutron_database_name: "neutron"
+neutron_database_address: "{{ internal_vip_address }}:{{ mariadb_port }}"
+
+neutron_bridge_name: "br-ex"
+
+####################
+# Extension drivers
+####################
+extension_drivers:
+  - name: "qos"
+    enabled: "{{ enable_neutron_qos | bool }}"
+  - name: "port_security"
+    enabled: "{{ enable_tacker | bool or enable_designate | bool }}"
+  - name: "dns"
+    enabled: "{{ enable_designate | bool }}"
+
+neutron_extension_drivers: "{{ extension_drivers|selectattr('enabled', 'equalto', true)|list }}"
+
+####################
+# Notification
+####################
+neutron_notification_topics:
+  - name: notifications
+    enabled: "{{ enable_ceilometer | bool or enable_searchlight | bool }}"
+  - name: notifications_designate
+    enabled: "{{ enable_designate | bool }}"
+
+neutron_enabled_notification_topics: "{{ neutron_notification_topics | selectattr('enabled', 'equalto', true) | list }}"
+
+neutron_distro_packages:
+  - keepalived
+  - openstack-neutron
+  - conntrack-tools
+  - dnsmasq
+  - openstack-neutron-ml2
+  - openvswitch
+  - openstack-neutron-openvswitch
+  - openstack-neutron-linuxbridge
+  - python-openvswitch
+
+neutron_lb_packages:
+  - openstack-neutron-lbaas
+  - haproxy
+
+neutron_fw_packages:
+  - openstack-neutron-fwaas
+  - python-neutron-fwaas
+
+neutron_linuxbridge_packages:
+  - ebtables
+  - openstack-neutron-linuxbridge
+
+neutron_openvswitch_packages:
+  - openstack-neutron-openvswitch
+  - openvswitch
+
+neutron_vpn_packages:
+  - openstack-neutron-vpnaas
+  - openswan
+
+neutron_services:
+  openvswitch-db-server:
+    service: "openvswitch"
+    enabled: "{{ neutron_plugin_agent == 'openvswitch' }}"
+    host_in_groups: >-
+      {{
+      inventory_hostname in groups['compute']
+      or inventory_hostname in groups['neutron-dhcp-agent']
+      or inventory_hostname in groups['neutron-l3-agent']
+      or inventory_hostname in groups['neutron-metadata-agent']
+      or inventory_hostname in groups['neutron-vpnaas-agent']
+      }}
+  openvswitch-vswitchd:
+    service: "openvswitch"
+    enabled: "{{ neutron_plugin_agent == 'openvswitch' }}"
+    host_in_groups: >-
+      {{
+      inventory_hostname in groups['compute']
+      or inventory_hostname in groups['neutron-dhcp-agent']
+      or inventory_hostname in groups['neutron-l3-agent']
+      or inventory_hostname in groups['neutron-metadata-agent']
+      or inventory_hostname in groups['neutron-vpnaas-agent']
+      }}
+  neutron-server:
+    service: "neutron-server"
+    enabled: true
+    group: "neutron-server"
+    host_in_groups: "{{ inventory_hostname in groups['neutron-server'] }}"
+  neutron-openvswitch-agent:
+    service: "neutron-openvswitch-agent"
+    enabled: "{{ neutron_plugin_agent == 'openvswitch' }}"
+    host_in_groups: >-
+      {{
+      ( inventory_hostname in groups['compute']
+      or inventory_hostname in groups['neutron-dhcp-agent']
+      or inventory_hostname in groups['neutron-l3-agent']
+      or inventory_hostname in groups['neutron-metadata-agent']
+      or inventory_hostname in groups['neutron-vpnaas-agent']
+      and not enable_nova_fake | bool
+      ) or
+      ( inventory_hostname in groups['neutron-dhcp-agent']
+      or inventory_hostname in groups['neutron-l3-agent']
+      or inventory_hostname in groups['neutron-metadata-agent']
+      or inventory_hostname in groups['neutron-vpnaas-agent']
+      and enable_nova_fake | bool
+      )
+      }}
+  neutron-sfc-agent:
+    service: "neutron-sfc-agent"
+    enabled: "{{ neutron_plugin_agent == 'sfc' }}"
+    host_in_groups: >-
+      {{
+      ( inventory_hostname in groups['compute']
+      or inventory_hostname in groups['neutron-dhcp-agent']
+      or inventory_hostname in groups['neutron-l3-agent']
+      or inventory_hostname in groups['neutron-metadata-agent']
+      and not enable_nova_fake | bool
+      ) or
+      ( inventory_hostname in groups['neutron-dhcp-agent']
+      or inventory_hostname in groups['neutron-l3-agent']
+      or inventory_hostname in groups['neutron-metadata-agent']
+      and enable_nova_fake | bool
+      )
+      }}
+  neutron-linuxbridge-agent:
+    service: "neutron-linuxbridge-agent"
+    enabled: "{{ neutron_plugin_agent == 'linuxbridge' }}"
+    host_in_groups: >-
+      {{
+      inventory_hostname in groups['compute']
+      or inventory_hostname in groups['neutron-dhcp-agent']
+      or inventory_hostname in groups['neutron-l3-agent']
+      or inventory_hostname in groups['neutron-metadata-agent']
+      or inventory_hostname in groups['neutron-vpnaas-agent']
+      }}
+  neutron-dhcp-agent:
+    service: "neutron-dhcp-agent"
+    enabled: True
+    group: "neutron-dhcp-agent"
+    host_in_groups: "{{ inventory_hostname in groups['neutron-dhcp-agent'] }}"
+  neutron-l3-agent:
+    service: "neutron-l3-agent"
+    enabled: "{{ not enable_neutron_vpnaas | bool }}"
+    group: "neutron-l3-agent"
+    host_in_groups: >-
+      {{
+      inventory_hostname in groups['neutron-l3-agent']
+      or (inventory_hostname in groups['compute'] and enable_neutron_dvr | bool)
+      }}
+  neutron-lbaas-agent:
+    service: "neutron-lbaas-agent"
+    enabled: "{{ enable_neutron_lbaas | bool }}"
+    group: "neutron-lbaas-agent"
+    host_in_groups: "{{ inventory_hostname in groups['neutron-lbaas-agent'] }}"
+  neutron-metadata-agent:
+    service: "neutron-metadata-agent"
+    enabled: true
+    gropup: "neutron-metadata-agent"
+    host_in_groups: >-
+      {{
+      inventory_hostname in groups['neutron-metadata-agent']
+      or (inventory_hostname in groups['compute'] and enable_neutron_dvr | bool)
+      }}
+  neutron-vpnaas-agent:
+    service: "neutron-vpnaas-agent"
+    enabled: "{{ enable_neutron_vpnaas | bool }}"
+    group: "neutron-vpnaas-agent"
+    host_in_groups: "{{ inventory_hostname in groups['neutron-vpnaas-agent'] }}"
+

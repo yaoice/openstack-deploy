@@ -1,0 +1,49 @@
+---
+
+- name: Fetching Ceph keyrings
+  command: python /tmp/fetch_ceph_keys.py
+  register: ceph_files_json
+  changed_when: (ceph_files_json.stdout | from_json).changed
+  failed_when: (ceph_files_json.stdout | from_json).failed
+  delegate_to: "{{ groups['ceph-mon'][0] }}"
+  run_once: True
+
+- name: Reading json from variable
+  set_fact:
+    ceph_files: "{{ (ceph_files_json.stdout | from_json) }}"
+
+- name: Pushing Ceph keyring for OSDs
+  bslurp:
+    src: "{{ item.content }}"
+    dest: "/etc/ceph/{{ item.filename }}"
+    mode: 0644
+    sha1: "{{ item.sha1 }}"
+  with_items:
+    - "{{ ceph_files['ceph.client.admin.keyring'] }}"
+  when: inventory_hostname in groups['ceph-osd']
+
+- name: Pushing Ceph keyrings for Mons
+  bslurp:
+    src: "{{ item.content }}"
+    dest: "/etc/ceph/{{ item.filename }}"
+    mode: 0644
+    sha1: "{{ item.sha1 }}"
+  with_items:
+    - "{{ ceph_files['ceph.client.admin.keyring'] }}"
+    - "{{ ceph_files['ceph.client.mon.keyring'] }}"
+    - "{{ ceph_files['ceph.client.radosgw.keyring'] }}"
+    - "{{ ceph_files['ceph.monmap'] }}"
+  when: 
+    - inventory_hostname in groups['ceph-mon']
+    - inventory_hostname != groups['ceph-mon'][0]
+
+- name: Pushing Ceph keyrings for RGWs
+  bslurp:
+    src: "{{ item.content }}"
+    dest: "/etc/ceph/{{ item.filename }}"
+    mode: 0644
+    sha1: "{{ item.sha1 }}"
+  with_items:
+    - "{{ ceph_files['ceph.client.admin.keyring'] }}"
+    - "{{ ceph_files['ceph.client.radosgw.keyring'] }}"
+  when: inventory_hostname in groups['ceph-rgw']

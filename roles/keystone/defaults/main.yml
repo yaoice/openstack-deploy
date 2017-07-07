@@ -1,0 +1,23 @@
+
+
+keystone_package_state: "present"
+
+keystone_log_dir: "/var/log/keystone"
+
+keystone_logging_debug: "{{ openstack_logging_debug }}"
+
+keystone_database_name: "keystone"
+keystone_database_address: "{{ internal_vip_address }}:{{ mariadb_port }}"
+
+keystone_distro_packages:
+  - httpd
+  - mod_ssl
+  - mod_wsgi
+  - openstack-keystone
+  - python-ldappool
+  - python-keystoneclient
+  - MySQL-python
+  - python2-PyMySQL
+  - gcc
+  - python-devel
+

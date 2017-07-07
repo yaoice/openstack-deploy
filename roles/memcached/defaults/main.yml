@@ -1,0 +1,28 @@
+---
+
+## Logging level
+debug: False
+
+# Set the package install state for distribution packages
+# Options are 'present' and 'latest'
+memcached_package_state: "latest"
+
+# The default memcache memory setting is to use .25 of the available system ram
+# as long as that value is < 8192. However you can set the `memcached_memory`
+# value to whatever you like as an override.
+base_memcached_memory: "{{ ansible_memtotal_mb | default(4096) }}"
+memcached_memory: "{{ base_memcached_memory | int // 4 if base_memcached_memory | int // 4 < 8192 else 8192 }}"
+
+memcached_log: /var/log/memcached/memcached.log
+memcached_connections: 1024
+memcached_threads: 4
+memcached_file_limits: "{{ memcached_connections | int + 1024 }}"
+
+memcached_user: memcached
+
+memcached_distro_packages:
+  - memcached
+
+memcached_conf_template: memcached.redhat.j2
+
+memcached_conf_dest: /etc/sysconfig/memcached

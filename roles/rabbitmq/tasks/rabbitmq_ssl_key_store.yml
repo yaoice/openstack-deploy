@@ -1,0 +1,16 @@
+- name: Store ssl cert
+  slurp:
+    src: "{{ rabbitmq_ssl_cert }}"
+  register: _rabbitmq_ssl_cert
+  changed_when: false
+
+- name: Store ssl key
+  slurp:
+    src: "{{ rabbitmq_ssl_key }}"
+  register: _rabbitmq_ssl_key
+  changed_when: false
+
+- name: Register a fact for the cert and key
+  set_fact:
+     rabbitmq_ssl_cert_fact: "{{ _rabbitmq_ssl_cert.content }}"
+     rabbitmq_ssl_key_fact: "{{ _rabbitmq_ssl_key.content }}"

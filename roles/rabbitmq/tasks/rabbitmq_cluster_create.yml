@@ -1,0 +1,11 @@
+- name: Get rabbitmq cluster name
+  shell: |
+    rabbitmqctl cluster_status | grep -w '<<"{{ rabbitmq_cluster_name }}">>'
+  register: rabbitmq_cluster_status
+  failed_when: false
+  changed_when: rabbitmq_cluster_status.rc != 0
+
+- name: Create rabbitmq cluster
+  shell: |
+    rabbitmqctl set_cluster_name {{ rabbitmq_cluster_name }}
+  when: rabbitmq_cluster_status.rc != 0

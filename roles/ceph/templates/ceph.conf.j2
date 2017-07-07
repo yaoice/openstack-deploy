@@ -1,0 +1,49 @@
+[global]
+log file = /var/log/ceph/$cluster-$name.log
+
+fsid = {{ ceph_cluster_fsid }}
+mon initial members = {% for host in groups['ceph-mon'] %}{{ hostvars[host]['ansible_' + hostvars[host]['storage_interface']]['ipv4']['address'] }}{% if not loop.last %}, {% endif %}{% endfor %}
+
+mon host = {% for host in groups['ceph-mon'] %}{{ hostvars[host]['ansible_' + hostvars[host]['storage_interface']]['ipv4']['address'] }}{% if not loop.last %}, {% endif %}{% endfor %}
+
+mon addr = {% for host in groups['ceph-mon'] %}{{ hostvars[host]['ansible_' + hostvars[host]['storage_interface']]['ipv4']['address'] }}:6789{% if not loop.last %}, {% endif %}{% endfor %}
+
+auth cluster required = cephx
+auth service required = cephx
+auth client required = cephx
+
+public network = {{ (hostvars[inventory_hostname]['ansible_' + hostvars[inventory_hostname]['storage_interface']]['ipv4']['network'] + '/' + hostvars[inventory_hostname]['ansible_' + hostvars[inventory_hostname]['storage_interface']]['ipv4']['netmask']) | ipaddr('net') }}
+
+cluster network = {{ (hostvars[inventory_hostname]['ansible_' + hostvars[inventory_hostname]['cluster_interface']]['ipv4']['network'] + '/' + hostvars[inventory_hostname]['ansible_' + hostvars[inventory_hostname]['cluster_interface']]['ipv4']['netmask']) | ipaddr('net') }}
+
+osd journal size = {{ ceph_osd_journal_size }}
+
+osd pool default pg num = {{ ceph_osd_pool_default_pg_num }}
+osd pool default pgp num = {{ ceph_osd_pool_default_pgp_num }}
+
+osd pool default size = {{ ceph_osd_pool_default_size }}
+osd pool default min size = {{ ceph_osd_pool_default_min_size }}
+
+mon osd full ratio = {{ mon_osd_full_ratio }}
+mon osd nearfull ratio = {{ mon_osd_nearfull_ratio }}
+mon clock drift allowed  = {{ mon_clock_drift_allowed }}
+
+osd deep scrub stride = {{ ceph_osd_deep_scrub_stride }}
+osd map cache size = {{ ceph_osd_map_cache_size }}
+osd map cache bl size = {{ ceph_osd_map_cache_bl_size }}
+osd mount options xfs = {{ ceph_osd_mount_options_xfs }}
+
+osd recovery op priority = {{ ceph_osd_recovery_op_priority }}
+osd recovery max active = {{ ceph_osd_recovery_max_active }}
+osd max backfills = {{ ceph_osd_max_backfills }}
+
+[client]
+rbd cache = {{ ceph_rbd_cache }}
+rbd cache size = {{ ceph_rbd_cache_size }}
+rbd cache max dirty = {{ ceph_rbd_cache_max_dirty }}
+rbd cache max dirty age = {{ ceph_rbd_cache_max_dirty_age }}
+
+[mon]
+mon compact on start = true
+mon cluster log file = /var/log/ceph/$cluster.log
+

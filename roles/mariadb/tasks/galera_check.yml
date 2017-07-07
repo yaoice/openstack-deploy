@@ -1,0 +1,9 @@
+---
+
+- name: Waiting for MariaDB service to be ready through VIP
+  command: "mysql -h {{ internal_vip_address }} -P {{ mariadb_port }} -u haproxy -e 'show databases;'"
+  register: result
+  until: result | success
+  changed_when: False
+  retries: 3
+  delay: 2

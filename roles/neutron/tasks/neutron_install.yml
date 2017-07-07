@@ -1,0 +1,67 @@
+---
+
+- name: Install neutron vpn packages
+  package:
+    name: "{{ item }}"
+    state: "{{ neutron_package_state }}"
+  register: install_packages
+  until: install_packages | success
+  retries: 5
+  delay: 2
+  with_items: "{{ neutron_vpn_packages }}"
+  when:
+    - enable_neutron_vpnaas | bool
+    - inventory_hostname in groups['neutron-vpnaas-agent']
+
+- name: Install neutron packages
+  package:
+    name: "{{ item }}"
+    state: "{{ neutron_package_state }}"
+  register: install_packages
+  until: install_packages | success
+  retries: 5
+  delay: 2
+  with_items: "{{ neutron_distro_packages }}"
+  when:
+    - inventory_hostname in groups['neutron-server'] or
+      inventory_hostname in groups['neutron-dhcp-agent'] or
+      inventory_hostname in groups['neutron-l3-agent'] or
+      inventory_hostname in groups['neutron-metadata-agent']
+
+- name: Install neutron lb packages
+  package:
+    name: "{{ item }}"
+    state: "{{ neutron_package_state }}"
+  register: install_packages
+  until: install_packages | success
+  retries: 5
+  delay: 2
+  with_items: "{{ neutron_lb_packages }}"
+  when:
+    - enable_neutron_lbaas | bool
+    - inventory_hostname in groups['neutron-lbaas-agent']
+
+- name: Install neutron fw packages
+  package:
+    name: "{{ item }}"
+    state: "{{ neutron_package_state }}"
+  register: install_packages
+  until: install_packages | success
+  retries: 5
+  delay: 2
+  with_items: "{{ neutron_fw_packages }}"
+  when:
+    - enable_neutron_fwaas | bool
+    - inventory_hostname in groups['neutron-l3-agent']
+
+- name: Install neutron agent packages
+  package:
+    name: "{{ item }}"
+    state: "{{ neutron_package_state }}"
+  register: install_packages
+  until: install_packages | success
+  retries: 5
+  delay: 2
+  with_items: "{% if neutron_plugin_agent == 'openvswitch' %}{{ neutron_openvswitch_packages }}{% elif  neutron_plugin_agent == 'linuxbridge' %}{{ neutron_linuxbridge_packages }}{% endif %}"
+  when:
+    - inventory_hostname in groups['compute']

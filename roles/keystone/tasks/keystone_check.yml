@@ -1,0 +1,17 @@
+---
+
+- name: Keystone checks
+  os_sanity:
+      service: keystone
+      project: service
+      user: admin
+      password: "{{ keystone_admin_password }}"
+      role: admin
+      region_name: "{{ openstack_region_name }}"
+      auth: "{{ openstack_auth }}"
+      endpoint_type: admin
+#  register: keystone_sanity
+#  until: keystone_sanity.rc == 0
+#  retries: 10
+#  delay: 5
+  run_once: True

@@ -1,0 +1,76 @@
+---
+
+- include: nova_install.yml
+  when: inventory_hostname in groups['nova-api'] or
+        inventory_hostname in groups['nova-conductor'] or
+        inventory_hostname in groups['nova-consoleauth'] or
+        inventory_hostname in groups['nova-novncproxy'] or
+        inventory_hostname in groups['nova-spicehtml5proxy'] or
+        inventory_hostname in groups['nova-scheduler']
+
+- include: nova_compute_install.yml
+  when: inventory_hostname in groups['compute']
+
+- name: Gather variables for each operating system
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ role_path }}/../ceph/vars/redhat.yml"
+  when:
+    - enable_ceph | bool and nova_backend == "rbd"
+    - inventory_hostname in groups['ceph-mon'] or
+        inventory_hostname in groups['compute'] or
+        inventory_hostname in groups['nova-api'] or
+        inventory_hostname in groups['nova-conductor'] or
+        inventory_hostname in groups['nova-consoleauth'] or
+        inventory_hostname in groups['nova-novncproxy'] or
+        inventory_hostname in groups['nova-spicehtml5proxy'] or
+        inventory_hostname in groups['nova-scheduler']
+
+- include: nova_ceph.yml
+  when:
+    - enable_ceph | bool and nova_backend == "rbd"
+    - inventory_hostname in groups['ceph-mon'] or
+        inventory_hostname in groups['compute'] or
+        inventory_hostname in groups['nova-api'] or
+        inventory_hostname in groups['nova-conductor'] or
+        inventory_hostname in groups['nova-consoleauth'] or
+        inventory_hostname in groups['nova-novncproxy'] or
+        inventory_hostname in groups['nova-spicehtml5proxy'] or
+        inventory_hostname in groups['nova-scheduler']
+
+- include: nova_external_ceph.yml
+  when:
+    - enable_ceph | bool == False and nova_backend == "rbd"
+    - inventory_hostname in groups['compute']
+
+- include: nova_config.yml
+  when: inventory_hostname in groups['compute'] or
+        inventory_hostname in groups['nova-api'] or
+        inventory_hostname in groups['nova-conductor'] or
+        inventory_hostname in groups['nova-consoleauth'] or
+        inventory_hostname in groups['nova-novncproxy'] or
+        inventory_hostname in groups['nova-spicehtml5proxy'] or
+        inventory_hostname in groups['nova-scheduler']
+
+- include: nova_register.yml
+  when: inventory_hostname in groups['nova-api']
+
+- include: nova_db.yml
+  when: inventory_hostname in groups['nova-api']
+
+- include: nova_services.yml
+  when: inventory_hostname in groups['compute'] or
+        inventory_hostname in groups['nova-api'] or
+        inventory_hostname in groups['nova-conductor'] or
+        inventory_hostname in groups['nova-consoleauth'] or
+        inventory_hostname in groups['nova-novncproxy'] or
+        inventory_hostname in groups['nova-spicehtml5proxy'] or
+        inventory_hostname in groups['nova-scheduler']
+
+- name: Flush handlers
+  meta: flush_handlers
+
+- include: nova_simple_cell_setup.yml
+
+- include: nova_check.yml
+  when: inventory_hostname in groups['nova-api']

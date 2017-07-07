@@ -1,0 +1,77 @@
+---
+
+- name: Ensuring config directory exists
+  file:
+    path: "/etc/ceph"
+    state: directory
+  when: inventory_hostname in groups['compute']
+
+- name: Check nova keyring file
+  local_action: stat path="{{ role_path }}/files/ceph.client.nova.keyring"
+  register: nova_cephx_keyring_file
+  failed_when: not nova_cephx_keyring_file.stat.exists
+  when: external_ceph_cephx_enabled | bool
+
+- name: Check cinder keyring file
+  local_action: stat path="{{ role_path }}/files/ceph.client.cinder.keyring"
+  register: cinder_cephx_keyring_file
+  failed_when: not cinder_cephx_keyring_file.stat.exists
+  when:
+    - cinder_backend_ceph | bool
+
+# NOTE: nova-compute and nova-libvirt only need ceph.client.nova.keyring.
+- name: Copy over ceph nova keyring file
+  copy:
+    src: "{{ nova_cephx_keyring_file.stat.path }}"
+    dest: "/etc/ceph/"
+  when:
+    - inventory_hostname in groups['compute']
+
+- name: Copy over ceph.conf
+  copy:
+    src: "ceph.conf"
+    dest: "/etc/ceph/"
+  when: inventory_hostname in groups['compute']
+
+- name: Pushing nova secret xml for libvirt
+  template:
+    src: "secret.xml.j2"
+    dest: "/etc/ceph/{{ item.uuid }}.xml"
+    mode: "0644"
+  when:
+    - inventory_hostname in groups['compute']
+    - item.enabled | bool
+  with_items:
+    - uuid: "{{ rbd_secret_uuid }}"
+      name: "client.nova secret"
+      enabled: true
+    - uuid: "{{ cinder_rbd_secret_uuid }}"
+      name: "client.cinder secret"
+      enabled: "{{ cinder_backend_ceph }}"
+
+- name: Extract nova key from file
+  local_action: shell cat "{{ nova_cephx_keyring_file.stat.path }}" | grep -E 'key\s*=' | awk '{ print $3 }'
+  register: nova_cephx_raw_key
+  when: external_ceph_cephx_enabled | bool
+
+- name: Extract cinder key from file
+  local_action: shell cat "{{ cinder_cephx_keyring_file.stat.path }}" | grep -E 'key\s*=' | awk '{ print $3 }'
+  register: cinder_cephx_raw_key
+  when:
+    - cinder_backend_ceph | bool
+
+- name: Pushing secrets key for libvirt
+  copy:
+    content: "{{ item.content }}"
+    dest: "/etc/ceph/{{ item.uuid }}.base64"
+    mode: "0644"
+  when:
+    - inventory_hostname in groups['compute']
+    - item.enabled | bool
+  with_items:
+    - uuid: "{{ rbd_secret_uuid }}"
+      content: "{{ nova_cephx_raw_key.stdout }}"
+      enabled: true
+    - uuid: "{{ cinder_rbd_secret_uuid }}"
+      content: "{{ cinder_cephx_raw_key.stdout }}"
+      enabled: "{{ cinder_backend_ceph }}"

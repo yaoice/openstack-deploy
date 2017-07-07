@@ -1,0 +1,27 @@
+---
+
+- name: Bootstrap the Identity service
+  changed_when: False
+  command: |
+      keystone-manage bootstrap --bootstrap-username {{ openstack_auth.username }} \
+                                --bootstrap-password {{ openstack_auth.password }} \
+                                --bootstrap-project-name {{ openstack_auth.project_name }} \
+                                --bootstrap-role-name admin \
+                                --bootstrap-admin-url {{ keystone_admin_url }} \
+                                --bootstrap-internal-url {{ keystone_internal_url }} \
+                                --bootstrap-public-url {{ keystone_public_url }} \
+                                --bootstrap-service-name keystone \
+                                --bootstrap-region-id {{ item }}
+  with_items: "{{ multiple_regions_names }}"
+  run_once: True
+
+- name: Creating default user role
+  os_keystone_role:
+    name: "{{ keystone_default_user_role }}"
+    auth: "{{ openstack_auth }}"
+    endpoint_type: admin
+  run_once: True
+  register: keystone_default_role
+  until: keystone_default_role|success
+  retries: 3
+  delay: 5

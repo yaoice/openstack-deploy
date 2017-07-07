@@ -1,0 +1,29 @@
+- name: Stop mysql
+  service:
+    name: mariadb
+    state: stopped 
+  register: galera_stopped
+  until: galera_stopped | success
+  retries: 3
+  delay: 5
+
+- name: Start first mysql 
+  command: galera_new_cluster
+  register: galera_started
+  until: galera_started | success
+  retries: 3
+  delay: 5
+  when:
+    - inventory_hostname == galera_server_bootstrap_node
+
+- name: Start other mysql
+  service:
+    name: mariadb
+    state: started
+  register: galera_started
+  until: galera_started | success
+  retries: 3
+  delay: 5
+  when:
+    - inventory_hostname != galera_server_bootstrap_node
+

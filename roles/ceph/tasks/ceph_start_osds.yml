@@ -1,0 +1,18 @@
+---
+
+- include: check_devices.yml
+
+- name: manually prepare filestore osd disk(s) with collocated osd data and journal
+  command: "ceph-disk prepare --cluster {{ ceph_cluster_name }} {{ item.2 }} {{ item.3.journal }}"
+  with_together:
+    - "{{ parted_results.results }}"
+    - "{{ ispartition_results.results }}"
+    - "{{ ceph_osd[inventory_hostname].keys() }}"
+    - "{{ ceph_osd[inventory_hostname].values() }}"
+  when:
+    - not item.0.get("skipped")
+    - not item.1.get("skipped")
+    - item.0.get("rc", 0) != 0
+    - item.1.get("rc", 0) != 0
+
+- include: activate_osds.yml

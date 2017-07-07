@@ -1,0 +1,7 @@
+# {{ ansible_managed }}
+
+[client]
+host     = {{ api_interface_address }}
+user     = root
+password = {{ galera_root_password }}
+socket   = /var/lib/mysql/mysql.sock

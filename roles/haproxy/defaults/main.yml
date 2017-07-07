@@ -1,0 +1,20 @@
+---
+
+haproxy_package_state: "latest"
+
+haproxy_client_timeout: "1m"
+haproxy_server_timeout: "1m"
+
+haproxy_glance_api_client_timeout: "6h"
+haproxy_glance_api_server_timeout: "6h"
+
+haproxy_distro_packages:
+  - socat
+  - haproxy
+  - keepalived
+
+haproxy_conf_template: haproxy.redhat.j2
+haproxy_conf_dest: /etc/haproxy/haproxy.cfg
+
+keepalived_conf_template: keepalived.redhat.j2
+keepalived_conf_dest: /etc/keepalived/keepalived.conf

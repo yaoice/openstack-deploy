@@ -1,0 +1,82 @@
+cinder_package_state: "present"
+
+####################
+# Ceph
+####################
+ceph_cinder_pool_type: "{{ ceph_pool_type }}"
+ceph_cinder_cache_mode: "{{ ceph_cache_mode }}"
+ceph_cinder_backup_pool_type: "{{ ceph_pool_type }}"
+ceph_cinder_backup_cache_mode: "{{ ceph_cache_mode }}"
+
+# Due to Ansible issues on include, you cannot override these variables. Please
+# override the variables they reference instead.
+cinder_pool_name: "{{ ceph_cinder_pool_name }}"
+cinder_pool_type: "{{ ceph_cinder_pool_type }}"
+cinder_cache_mode: "{{ ceph_cinder_cache_mode }}"
+cinder_backup_pool_name: "{{ ceph_cinder_backup_pool_name }}"
+cinder_backup_pool_type: "{{ ceph_cinder_backup_pool_type }}"
+cinder_backup_cache_mode: "{{ ceph_cinder_backup_cache_mode }}"
+
+####################
+# Database
+####################
+cinder_database_name: "cinder"
+cinder_database_address: "{{ internal_vip_address }}:{{ mariadb_port }}"
+
+####################
+# OpenStack
+####################
+cinder_admin_endpoint: "{{ admin_protocol }}://{{ internal_vip_address }}:{{ cinder_api_port }}/v1/%(tenant_id)s"
+cinder_internal_endpoint: "{{ internal_protocol }}://{{ internal_vip_address }}:{{ cinder_api_port }}/v1/%(tenant_id)s"
+cinder_public_endpoint: "{{ public_protocol }}://{{ external_vip_address }}:{{ cinder_api_port }}/v1/%(tenant_id)s"
+cinder_v2_admin_endpoint: "{{ admin_protocol }}://{{ internal_vip_address }}:{{ cinder_api_port }}/v2/%(tenant_id)s"
+cinder_v2_internal_endpoint: "{{ internal_protocol }}://{{ internal_vip_address }}:{{ cinder_api_port }}/v2/%(tenant_id)s"
+cinder_v2_public_endpoint: "{{ public_protocol }}://{{ external_vip_address }}:{{ cinder_api_port }}/v2/%(tenant_id)s"
+cinder_v3_admin_endpoint: "{{ admin_protocol }}://{{ internal_vip_address }}:{{ cinder_api_port }}/v3/%(tenant_id)s"
+cinder_v3_internal_endpoint: "{{ internal_protocol }}://{{ internal_vip_address }}:{{ cinder_api_port }}/v3/%(tenant_id)s"
+cinder_v3_public_endpoint: "{{ public_protocol }}://{{ external_vip_address }}:{{ cinder_api_port }}/v3/%(tenant_id)s"
+
+cinder_logging_debug: "{{ openstack_logging_debug }}"
+
+openstack_cinder_auth: "{{ openstack_auth }}"
+
+cinder_distro_packages:
+  - nfs-utils
+  - scsi-target-utils
+  - openstack-cinder
+  - python-automaton
+  - lvm2
+  - ceph-common
+  - python-keystone
+  - httpd
+  - mod_wsgi
+
+####################
+# Cinder
+####################
+cinder_backends:
+  - name: "rbd-1"
+    driver: "ceph"
+    enabled: "{{ enable_ceph | bool and cinder_backend_ceph | bool }}"
+  - name: "lvm-1"
+    driver: "lvm"
+    enabled: "{{ enable_cinder_backend_lvm | bool }}"
+  - name: "nfs-1"
+    driver: "nfs"
+    enabled: "{{ enable_cinder_backend_nfs | bool }}"
+
+cinder_enabled_backends: "{{ cinder_backends|selectattr('enabled', 'equalto', true)|list }}"
+
+cinder_services:
+  cinder-api:
+    group: cinder-api
+    enabled: true
+  cinder-scheduler:
+    group: cinder-scheduler
+    enabled: true
+  cinder-volume:
+    group: cinder-volume
+    enabled: true
+  cinder-backup:
+    group: cinder-backup
+    enabled: true

@@ -1,0 +1,28 @@
+- name: Set fact for extra arguments in MySQL commands
+  set_fact:
+    mysql_extra_args: "{{ (ansible_os_family == 'RedHat') | ternary('--defaults-file=/etc/redhat.cnf', '') }}"
+
+- name: Confirm service connectivity
+  command: "/usr/bin/mysqladmin {{ mysql_extra_args }} ping"
+  register: _mysql_running
+  until: _mysql_running.rc == 0
+  retries: "{{ num_retries }}"
+  delay: "{{ wait_delay }}"
+  failed_when: false
+  changed_when: _mysql_running.rc != 0
+
+- name: Check that WSREP is ready
+  shell: "/usr/bin/mysqladmin {{ mysql_extra_args }} extended-status | egrep '(wsrep_ready|wsrep_evs_state)'"
+  changed_when: >
+    _mysql_ready.rc != 0
+  register: _mysql_ready
+  when: _mysql_running.rc == 0
+  until:
+    - _mysql_ready.rc == 0
+    - (_mysql_ready.stdout).find("ON") != -1
+  retries: "{{ num_retries }}"
+  delay: "{{ wait_delay }}"
+
+- name: Set running state fact
+  set_fact:
+    mysql_running: "{{ _mysql_running }}"

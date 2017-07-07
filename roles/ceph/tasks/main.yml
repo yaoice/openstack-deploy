@@ -1,0 +1,29 @@
+---
+
+- name: Gather variables for each operating system
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution | lower }}-{{ ansible_distribution_version | lower }}.yml"
+    - "{{ ansible_distribution | lower }}-{{ ansible_distribution_major_version | lower }}.yml"
+    - "{{ ansible_os_family | lower }}-{{ ansible_distribution_major_version | lower }}.yml"
+    - "{{ ansible_distribution | lower }}.yml"
+    - "{{ ansible_os_family | lower }}-{{ ansible_distribution_version.split('.')[0] }}.yml"
+    - "{{ ansible_os_family | lower }}.yml"
+
+- include: ceph_install.yml
+
+- include: ceph_config.yml
+
+- include: ceph_bootstrap_mons.yml
+  when: inventory_hostname == groups['ceph-mon'][0]
+
+- include: ceph_distribute_keyrings.yml
+
+- include: ceph_start_mons.yml
+  when: inventory_hostname in groups['ceph-mon']
+
+- name: Flush handlers
+  meta: flush_handlers
+
+- include: ceph_start_osds.yml
+  when: inventory_hostname in groups['ceph-osd']

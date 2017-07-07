@@ -1,0 +1,40 @@
+---
+
+- name: Ensure openvswitch service started
+  vars:
+    service: "{{ neutron_services['neutron-openvswitch-agent'] }}"
+  systemd:
+    name: "openvswitch" 
+    state: "started"
+    enabled: True
+  when: 
+    - neutron_plugin_agent == 'openvswitch'
+    - service.enabled | bool
+    - service.host_in_groups | bool
+
+- include: neutron_bridge.yml
+  when:
+    - neutron_plugin_agent == 'openvswitch'
+    - (inventory_hostname in groups['openvswitch'] or
+       inventory_hostname in groups['neutron-l3-agent'])
+
+- name: Ensure neutron service started 
+  vars:
+    services_need_ml2_conf_ini:
+      - "neutron-dhcp-agent"
+      - "neutron-l3-agent"
+      - "neutron-linuxbridge-agent"
+      - "neutron-lbaas-agent"
+      - "neutron-metadata-agent"
+      - "neutron-openvswitch-agent"
+      - "neutron-server"
+      - "neutron-vpnaas-agent"
+  systemd:
+    name: "{{ item.value.service }}"
+    state: "started"
+    enabled: "{{ item.value.enabled }}"
+  when:
+    - item.key in services_need_ml2_conf_ini
+    - item.value.enabled | bool
+    - item.value.host_in_groups | bool
+  with_dict: "{{ neutron_services }}"

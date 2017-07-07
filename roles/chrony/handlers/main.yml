@@ -1,0 +1,7 @@
+---
+
+- name: Restart chrony
+  systemd:
+    name: "chronyd"
+    state: "restarted"
+    enabled: yes

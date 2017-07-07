@@ -1,0 +1,36 @@
+---
+- name: Creating the Neutron service and endpoint
+  os_keystone_service:
+    service_name: "neutron"
+    service_type: "network"
+    description: "Openstack Networking"
+    endpoint_region: "{{ openstack_region_name }}"
+    url: "{{ item.url }}"
+    interface: "{{ item.interface }}"
+    region_name: "{{ openstack_region_name }}"
+    auth: "{{ openstack_auth }}"
+    endpoint_type: admin
+  register: neutron_endpoint
+  until: neutron_endpoint|success
+  retries: 10
+  delay: 5
+  run_once: True
+  with_items:
+    - {'interface': 'admin', 'url': '{{ neutron_admin_endpoint }}'}
+    - {'interface': 'internal', 'url': '{{ neutron_internal_endpoint }}'}
+    - {'interface': 'public', 'url': '{{ neutron_public_endpoint }}'}
+
+- name: Creating the Neutron project, user, and role
+  os_keystone_user:
+    project: "service"
+    user: "{{ neutron_keystone_user }}"
+    password: "{{ neutron_keystone_password }}"
+    role: "admin"
+    region_name: "{{ openstack_region_name }}"
+    auth: "{{ openstack_auth }}"
+    endpoint_type: admin
+  register: neutron_user
+  until: neutron_user|success
+  retries: 10
+  delay: 5
+  run_once: True

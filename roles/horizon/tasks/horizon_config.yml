@@ -1,0 +1,12 @@
+---
+
+- name: Apply horizon config
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { src: 'local_settings.j2', dest: '/etc/openstack-dashboard/local_settings' }
+    - { src: 'openstack-dashboard.conf.j2', dest: '/etc/httpd/conf.d/openstack-dashboard.conf' }
+  notify:
+    - Restart horizon
+

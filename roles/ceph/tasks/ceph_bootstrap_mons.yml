@@ -1,0 +1,31 @@
+---
+
+- name: Create fetch_ceph_keys.py file
+  copy:
+    src: "fetch_ceph_keys.py"
+    dest: "/tmp/fetch_ceph_keys.py"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+
+- name: "Generating initial Ceph keyring and monmap"
+  shell: |
+    ceph-authtool --create-keyring "{{ ceph_keyring_mon }}" --gen-key -n mon. --cap mon 'allow *' && \
+    ceph-authtool --create-keyring "{{ ceph_keyring_admin }}" --gen-key -n client.admin --set-uid=0 --cap mon 'allow *' --cap osd 'allow *' --cap mds 'allow' && \
+    ceph-authtool --create-keyring "{{ ceph_keyring_rgw }}" --gen-key -n client.radosgw.gateway --set-uid=0 --cap osd 'allow rwx' --cap mon 'allow rwx' && \
+    ceph-authtool "{{ ceph_keyring_mon }}" --import-keyring "{{ ceph_keyring_admin }}" && \
+    ceph-authtool "{{ ceph_keyring_mon }}" --import-keyring "{{ ceph_keyring_rgw }}" && \
+    monmaptool --create {% for host in groups['ceph-mon'] %} --add {{ hostvars[host]['ansible_' + hostvars[host]['storage_interface']]['ipv4']['address'] }} {{ hostvars[host]['ansible_' + hostvars[host]['storage_interface']]['ipv4']['address'] }}{% endfor %} --fsid "{{ ceph_cluster_fsid }}" "{{ ceph_monmap }}" && \
+    touch /etc/ceph/cluster_bootstrap
+  args:
+    creates: /etc/ceph/cluster_bootstrap
+
+- name: Ensure ceph config dir mode
+  file:
+    path: "/etc/ceph"
+    state: directory
+    owner: ceph
+    group: ceph
+    recurse: yes
+
+- include: ceph_start_mons.yml

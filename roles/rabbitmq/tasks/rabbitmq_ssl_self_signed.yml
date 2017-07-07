@@ -1,0 +1,14 @@
+- include: rabbitmq_ssl_key_create.yml
+  when: >
+    inventory_hostname == groups['rabbitmq'][0]
+
+# The certificate and key are stored in memcached for easy distribution.
+- include: rabbitmq_ssl_key_store.yml
+  when: >
+    inventory_hostname == groups['rabbitmq'][0]
+
+# The additional RabbitMQ nodes will retrieve their SSL certificates and keys
+# from memcached.
+- include: rabbitmq_ssl_key_distribute.yml
+  when: >
+    inventory_hostname != groups['rabbitmq'][0]

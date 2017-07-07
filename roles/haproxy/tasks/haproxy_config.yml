@@ -1,0 +1,34 @@
+---
+
+- name: Setting sysctl values
+  sysctl: name={{ item.name }} value={{ item.value }} sysctl_set=yes
+  with_items:
+    - { name: "net.ipv4.ip_nonlocal_bind", value: 1}
+    - { name: "net.unix.max_dgram_qlen", value: 128}
+
+- name: Apply keepalived check alive script
+  copy:
+    src: "check_alive.sh"
+    dest: "/etc/keepalived/check_alive.sh"
+    owner: "root"
+    group: "root"
+    mode: "0755"
+  notify: Restart keepalived
+
+- name: Apply keepalived config
+  template:
+    src: "{{ keepalived_conf_template }}"
+    dest: "{{ keepalived_conf_dest }}"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  notify: Restart keepalived
+
+- name: Apply haproxy config
+  template:
+    src: "{{ haproxy_conf_template }}"
+    dest: "{{ haproxy_conf_dest }}"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  notify: Restart haproxy

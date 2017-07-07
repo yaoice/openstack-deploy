@@ -1,0 +1,22 @@
+---
+
+- name: Test if the mon keyring exists
+  command: "test -f {{ ceph_dir }}/keyring"
+  register: mon_keyring_check
+  until: mon_keyring_check.rc == 0
+  retries: 3
+  delay: 1
+  failed_when: False
+  changed_when: mon_keyring_check.rc != 0
+
+- name: Generate keyring for current monitor
+  command: "ceph-mon --mkfs -i {{ hostvars[inventory_hostname]['ansible_' + storage_interface]['ipv4']['address'] }} --monmap {{ ceph_monmap }} --keyring {{ ceph_keyring_mon }}"
+  become: yes
+  become_user: ceph
+  when: mon_keyring_check.rc != 0
+
+- name: "Start mon services"
+  systemd:
+    state: started 
+    name: "ceph-mon@{{ hostvars[inventory_hostname]['ansible_' + storage_interface]['ipv4']['address'] }}"
+    enabled: True

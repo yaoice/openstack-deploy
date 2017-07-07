@@ -1,0 +1,12 @@
+---
+
+- name: Install memcached packages
+  package:
+    name: "{{ item }}"
+    state: "{{ memcached_package_state }}"
+  register: install_packages
+  until: install_packages | success
+  retries: 5
+  delay: 2
+  with_items: "{{ memcached_distro_packages }}"
+

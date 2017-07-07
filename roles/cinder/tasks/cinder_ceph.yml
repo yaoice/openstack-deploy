@@ -1,0 +1,51 @@
+- name: Ensuring ceph config directory exists
+  file:
+    path: "/etc/ceph"
+    state: directory
+  when: inventory_hostname in groups['cinder-volume']
+
+- name: Apply ceph config
+  template:
+    src: "{{ role_path }}/../ceph/templates/ceph.conf.j2"
+    dest: "/etc/ceph/ceph.conf"
+    owner: "ceph"
+    group: "ceph"
+    mode: "0644"
+  when: inventory_hostname in groups['cinder-volume']
+
+- include: ../../ceph_pools.yml
+  vars:
+    pool_name: "{{ cinder_pool_name }}"
+    pool_type: "{{ cinder_pool_type }}"
+    cache_mode: "{{ cinder_cache_mode }}"
+
+- include: ../../ceph_pools.yml
+  vars:
+    pool_name: "{{ cinder_backup_pool_name }}"
+    pool_type: "{{ cinder_backup_pool_type }}"
+    cache_mode: "{{ cinder_backup_cache_mode }}"
+
+- name: Pulling cephx keyring for cinder
+  command: ceph auth get-or-create client.cinder mon 'allow r' osd 'allow class-read object_prefix rbd_children, allow rwx pool={{ ceph_cinder_pool_name }}, allow rwx pool={{ ceph_cinder_pool_name }}-cache, allow rwx pool={{ ceph_nova_pool_name }}, allow rwx pool={{ ceph_nova_pool_name }}-cache, allow rx pool={{ ceph_glance_pool_name }}, allow rx pool={{ ceph_glance_pool_name }}-cache'
+  register: cephx_key_cinder
+  delegate_to: "{{ groups['ceph-mon'][0] }}"
+  changed_when: False
+  run_once: True
+
+- name: Pulling cephx keyring for cinder-backup
+  command: ceph auth get-or-create client.cinder-backup mon 'allow r' osd 'allow class-read object_prefix rbd_children, allow rwx pool={{ ceph_cinder_backup_pool_name }}, allow rwx pool={{ ceph_cinder_backup_pool_name }}-cache'
+  register: cephx_key_cinder_backup
+  delegate_to: "{{ groups['ceph-mon'][0] }}"
+  changed_when: False
+  run_once: True
+
+- name: Pushing cephx keyring
+  copy:
+    content: "{{ item.content }}\n\r"
+    dest: "/etc/ceph/ceph.client.{{ item.key_name }}.keyring"
+    mode: "0644"
+  with_items:
+    - { service_name: "cinder-volume", key_name: "cinder", content: "{{ cephx_key_cinder.stdout }}" }
+    - { service_name: "cinder-backup", key_name: "cinder", content: "{{ cephx_key_cinder.stdout }}" }
+    - { service_name: "cinder-backup", key_name: "cinder-backup", content: "{{ cephx_key_cinder_backup.stdout }}" }
+  when: inventory_hostname in groups['cinder-volume']

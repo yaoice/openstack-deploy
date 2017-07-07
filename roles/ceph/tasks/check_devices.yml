@@ -1,0 +1,5 @@
+---
+
+- include: check_osd_devices.yml
+
+- include: check_journal_devices.yml

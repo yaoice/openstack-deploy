@@ -1,0 +1,14 @@
+---
+
+chrony_package_state: "latest"
+chrony_log: /var/log/chrony/chrony.log
+
+chrony_user: chrony
+
+chrony_distro_packages:
+  - bash-completion
+  - chrony
+
+chrony_conf_template: chrony.redhat.j2
+
+chrony_conf_dest: /etc/chrony.conf

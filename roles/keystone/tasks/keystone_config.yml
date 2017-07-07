@@ -1,0 +1,47 @@
+---
+
+- name: Create keystone dir
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "keystone"
+    group: "keystone"
+    mode: 0755
+  with_items:
+    - "{{ keystone_log_dir }}"
+    - "/var/www/cgi-bin/keystone"
+
+- name: Create keystone admin and public script
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "keystone"
+    group: "keystone"
+    mode: 0755
+    remote_src: true
+  with_items:
+    - { src: "/usr/bin/keystone-wsgi-public", dest: "/var/www/cgi-bin/keystone/main" }
+    - { src: "/usr/bin/keystone-wsgi-admin", dest: "/var/www/cgi-bin/keystone/admin" }
+
+- name: Comment Listen config in httpd.conf
+  lineinfile:
+    path: "{{ item.path }}"
+    state: absent
+    regexp: "{{ item.regexp }}"
+  with_items:
+    - { path: "/etc/httpd/conf/httpd.conf", regexp: "^Listen 80" }
+    - { path: "/etc/httpd/conf.d/ssl.conf", regexp: "^Listen 443" }
+
+- name: Apply keystone config
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "0644"
+    owner: "keystone"
+    group: "keystone"
+  with_items:
+    - { src: "keystone.conf.j2", dest: "/etc/keystone/keystone.conf" }
+    - { src: "wsgi-keystone.conf.j2", dest: "/etc/httpd/conf.d/wsgi-keystone.conf" }
+  notify:
+    - Restart keystone
+

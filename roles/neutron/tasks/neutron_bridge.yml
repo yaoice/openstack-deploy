@@ -1,0 +1,70 @@
+---
+
+- name: check neutron external bridge exist
+  command: ovs-vsctl br-exists "{{ neutron_bridge_name.split(',')[0] }}"
+  register: exist_ex_bridge
+  changed_when: False
+  failed_when: False
+  when:
+    - inventory_hostname in groups['neutron-l3-agent']
+    - (neutron_bridge_name.split(',') | length) >= 1
+
+- name: add neutron external bridge
+  command: ovs-vsctl --no-wait add-br "{{ neutron_bridge_name.split(',')[0] }}"
+  when:
+    - exist_ex_bridge.rc != 0
+    - inventory_hostname in groups['neutron-l3-agent']
+    - (neutron_bridge_name.split(',') | length) >= 1
+
+- name: check neutron external bridge port exist
+  shell: "ovs-vsctl list-ports {{ neutron_bridge_name.split(',')[0] }} | grep {{ neutron_external_interface }}"
+  register: exist_ex_bridge_port
+  changed_when: False
+  failed_when: False
+  when:
+    - inventory_hostname in groups['neutron-l3-agent']
+    - (neutron_bridge_name.split(',') | length) >= 1
+    - neutron_l3_bridge_auto | bool
+
+- name: add neutron external bridge port
+  command: ovs-vsctl --no-wait add-port "{{ neutron_bridge_name.split(',')[0] }}" "{{ neutron_external_interface }}"
+  when:
+    - neutron_l3_bridge_auto | bool
+    - exist_ex_bridge_port.rc != 0
+    - inventory_hostname in groups['neutron-l3-agent']
+    - (neutron_bridge_name.split(',') | length) >= 1
+
+- name: check the neutron vlan bridge exist
+  command: ovs-vsctl br-exists "{{ neutron_bridge_name.split(',')[1] }}"
+  failed_when: False
+  changed_when: False
+  register: exist_vlan_bridge
+  when:
+    - inventory_hostname in groups['openvswitch']
+    - (neutron_bridge_name.split(',') | length) > 1
+
+- name: add neutron vlan bridge
+  command: ovs-vsctl --no-wait add-br "{{ neutron_bridge_name.split(',')[1] }}"
+  when: 
+    - (neutron_bridge_name.split(',') | length) > 1
+    - inventory_hostname in groups['openvswitch']
+    - exist_vlan_bridge.rc != 0
+
+- name: check the neutron vlan bridge port exist
+  command: ovs-vsctl list-ports "{{ neutron_bridge_name.split(',')[1] }}" | grep "{{ vlan_interface }}"
+  failed_when: False
+  changed_when: False
+  register: exist_vlan_bridge_port
+  when:
+    - neutron_vlan_bridge_auto | bool
+    - inventory_hostname in groups['openvswitch']
+    - (neutron_bridge_name.split(',') | length) > 1
+
+- name: add neutron vlan bridge port
+  command: ovs-vsctl --no-wait add-port "{{ neutron_bridge_name.split(',')[1] }}" "{{ vlan_interface }}"
+  when: 
+    - neutron_vlan_bridge_auto | bool
+    - exist_vlan_bridge_port.rc != 0
+    - inventory_hostname in groups['openvswitch']
+    - (neutron_bridge_name.split(',') | length) > 1
+

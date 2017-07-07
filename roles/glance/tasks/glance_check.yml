@@ -1,0 +1,13 @@
+---
+
+- name: Glance checks
+  os_sanity:
+      service: glance
+      project: service
+      user: "{{ glance_keystone_user }}"
+      password: "{{ glance_keystone_password }}"
+      role: admin
+      region_name: "{{ openstack_region_name }}"
+      auth: "{{ openstack_auth }}"
+      endpoint_type: admin
+  run_once: True

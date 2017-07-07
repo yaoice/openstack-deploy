@@ -1,0 +1,13 @@
+---
+
+- name: Start cinder service
+  systemd:
+    name: "{{ item }}"
+    state: "started"
+    enabled: yes
+  with_items:
+    - httpd
+    - openstack-cinder-scheduler
+    - openstack-cinder-volume
+    - openstack-cinder-backup
+

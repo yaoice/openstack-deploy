@@ -1,0 +1,23 @@
+---
+
+- include: keystone_install.yml
+
+- include: keystone_config.yml
+
+- include: keystone_db.yml
+
+- include: keystone_services.yml
+  
+- name: Flush handlers
+  meta: flush_handlers
+
+#TODO: fernet token ha
+- include: keystone_init_fernet.yml
+  when:
+    - keystone_token_provider == 'fernet'
+
+- include: keystone_register.yml
+
+- include: keystone_check.yml
+
+- include: keystone_post.yml

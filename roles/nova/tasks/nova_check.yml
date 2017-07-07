@@ -1,0 +1,13 @@
+---
+
+- name: Nova checks
+  os_sanity:
+      service: nova
+      project: service
+      user: "{{ nova_keystone_user }}"
+      password: "{{ nova_keystone_password }}"
+      role: admin
+      region_name: "{{ openstack_region_name }}"
+      auth: "{{ openstack_auth }}"
+      endpoint_type: admin
+  run_once: True

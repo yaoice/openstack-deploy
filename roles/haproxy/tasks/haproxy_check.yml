@@ -1,0 +1,19 @@
+---
+
+- name: Waiting for internal VIP
+  command: "ping -c 3 {{ internal_vip_address }}"
+  register: result
+  until: result | success
+  changed_when: False
+  retries: 3
+  delay: 2
+
+- name: Waiting for external VIP
+  command: "ping -c 3 {{ external_vip_address }}"
+  register: result
+  until: result | success
+  changed_when: False
+  retries: 3
+  delay: 2
+  when:
+    - haproxy_enable_external_vip | bool

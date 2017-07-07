@@ -1,0 +1,22 @@
+- include: galera_running_check.yml
+  vars:
+    num_retries: 2
+    wait_delay: 3
+
+- name: Start galera cluster
+  command: galera_new_cluster
+  when:
+    - mysql_running.rc != 0
+  register: start_cluster
+  failed_when: false
+
+- name: Wait for operational state
+  command: mysql {{ mysql_extra_args }} --silent --skip-column-names -e 'SHOW STATUS LIKE "wsrep_evs_state"'
+  register: galera_check_wait
+  until: galera_check_wait|success
+  failed_when: not galera_check_wait.stdout | search("OPERATIONAL")
+  retries: 6
+  delay: 5
+  when:
+    - mysql_running.rc != 0
+

@@ -1,0 +1,13 @@
+---
+
+- name: Cinder checks
+  os_sanity:
+      service: cinder
+      project: service
+      user: "{{ cinder_keystone_user }}"
+      password: "{{ cinder_keystone_password }}"
+      role: admin
+      region_name: "{{ openstack_region_name }}"
+      auth: "{{ openstack_auth }}"
+      endpoint_type: admin
+  run_once: True

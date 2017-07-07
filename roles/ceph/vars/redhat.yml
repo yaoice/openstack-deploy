@@ -1,0 +1,30 @@
+---
+
+ceph_osd_journal_size: 10240
+
+ceph_osd_pool_default_pg_num: 128
+ceph_osd_pool_default_pgp_num: 128
+
+ceph_osd_pool_default_size: 3
+ceph_osd_pool_default_min_size: 0
+
+mon_osd_full_ratio: .85
+mon_osd_nearfull_ratio: .75
+mon_clock_drift_allowed: .500
+
+ceph_osd_deep_scrub_stride: 131072
+ceph_osd_map_cache_size: 1024
+ceph_osd_map_cache_bl_size: 128
+ceph_osd_fs_type: xfs
+ceph_osd_mount_options_xfs: "rw,noexec,nodev,noatime,nodiratime,nobarrier"
+
+ceph_osd_recovery_op_priority: 4
+ceph_osd_recovery_max_active: 10
+ceph_osd_max_backfills: 4
+
+ceph_rbd_cache: true
+ceph_rbd_cache_size: 268435456
+ceph_rbd_cache_max_dirty: 134217728
+ceph_rbd_cache_max_dirty_age: 5
+
+ceph_cluster_name: "ceph"

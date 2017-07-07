@@ -1,0 +1,124 @@
+- name: Gather facts for all hosts
+  hosts: all
+  gather_facts: false
+  tasks:
+    - setup:
+  tags: always
+
+- name: Apply role hostname
+  hosts: all
+  tasks:
+    - hostname:
+        name: "{{ inventory_hostname }}"
+
+- name: Apply role chrony
+  hosts:
+    - chrony-server
+    - chrony
+  roles:
+    - { role: chrony,
+        tags: chrony,
+        when: enable_chrony | bool }
+
+- name: Apply role haproxy
+  hosts: haproxy
+  roles:
+    - { role: haproxy,
+        tags: haproxy,
+        when: enable_haproxy | bool }
+
+- name: Apply role rabbitmq
+  hosts: rabbitmq
+  roles:
+    - { role: rabbitmq,
+        tags: rabbitmq,
+        when: enable_rabbitmq | bool }
+
+- name: Apply role mariadb 
+  hosts: mariadb
+  roles:
+    - { role: mariadb,
+        tags: mariadb,
+        when: enable_mariadb | bool }
+
+- name: Apply role memcached
+  hosts: memcached 
+  roles:
+    - { role: memcached,
+        tags: memcached,
+        when: enable_memcached | bool }
+
+- name: Apply role ceph
+  hosts:
+    - ceph-mon
+    - ceph-osd
+    - ceph-rgw
+  roles:
+    - { role: ceph,
+        tags: ceph,
+        when: enable_ceph | bool }
+
+- name: Apply role keystone
+  hosts: keystone
+  roles:
+    - { role: keystone,
+        tags: keystone,
+        when: enable_keystone | bool }
+
+- name: Apply role glance
+  hosts:
+    - ceph-mon
+    - glance-api
+    - glance-registry
+  roles:
+    - { role: glance,
+        tags: glance,
+        when: enable_glance | bool }
+
+- name: Apply role cinder
+  hosts:
+    - ceph-mon
+    - cinder-api
+    - cinder-backup
+    - cinder-scheduler
+    - cinder-volume
+  roles:
+    - { role: cinder,
+        tags: cinder,
+        when: enable_cinder | bool }
+
+- name: Apply role nova
+  hosts:
+    - ceph-mon
+    - compute
+    - nova-api
+    - nova-conductor
+    - nova-consoleauth
+    - nova-novncproxy
+    - nova-scheduler
+  roles:
+    - { role: nova,
+        tags: nova,
+        when: enable_nova | bool }
+
+- name: Apply role neutron
+  hosts:
+    - neutron-server
+    - neutron-dhcp-agent
+    - neutron-l3-agent
+    - neutron-lbaas-agent
+    - neutron-metadata-agent
+    - neutron-vpnaas-agent
+    - compute
+  roles:
+    - { role: neutron,
+        tags: neutron,
+        when: enable_neutron | bool }
+
+- name: Apply role horizon
+  hosts:
+    - horizon
+  roles:
+    - { role: horizon,
+        tags: horizon,
+        when: enable_horizon | bool }

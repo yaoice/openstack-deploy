@@ -1,0 +1,61 @@
+---
+
+- name: Gather variables for each operating system
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ role_path }}/../ceph/vars/redhat.yml"
+  when:
+    - (enable_ceph | bool) and (cinder_backend_ceph | bool)
+    - inventory_hostname in groups['ceph-mon'] or
+        inventory_hostname in groups['cinder-api'] or
+        inventory_hostname in groups['cinder-volume'] or
+        inventory_hostname in groups['cinder-scheduler'] or
+        inventory_hostname in groups['cinder-backup']
+
+- include: cinder_ceph.yml
+  when:
+    - (enable_ceph | bool) and (cinder_backend_ceph | bool)
+    - inventory_hostname in groups['ceph-mon'] or
+        inventory_hostname in groups['cinder-api'] or
+        inventory_hostname in groups['cinder-volume'] or
+        inventory_hostname in groups['cinder-scheduler'] or
+        inventory_hostname in groups['cinder-backup']
+
+- include: cinder_external_ceph.yml
+  when:
+    - (enable_ceph | bool == False) and (cinder_backend_ceph | bool)
+    - inventory_hostname in groups['cinder-volume'] or
+      inventory_hostname in groups['cinder-backup']
+
+- include: cinder_install.yml
+  when: inventory_hostname in groups['cinder-api'] or
+        inventory_hostname in groups['cinder-volume'] or
+        inventory_hostname in groups['cinder-scheduler'] or
+        inventory_hostname in groups['cinder-backup']
+
+- include: cinder_register.yml
+  when: inventory_hostname in groups['cinder-api']
+
+- include: cinder_config.yml
+  when: inventory_hostname in groups['cinder-api'] or
+        inventory_hostname in groups['cinder-volume'] or
+        inventory_hostname in groups['cinder-scheduler'] or
+        inventory_hostname in groups['cinder-backup']
+
+- include: cinder_db.yml
+  when: inventory_hostname in groups['cinder-api']
+
+- include: cinder_services.yml
+  when: inventory_hostname in groups['cinder-api'] or
+        inventory_hostname in groups['cinder-volume'] or
+        inventory_hostname in groups['cinder-scheduler'] or
+        inventory_hostname in groups['cinder-backup']
+
+- name: Flush handlers
+  meta: flush_handlers
+
+- include: cinder_check.yml
+  when: inventory_hostname in groups['cinder-api'] or
+        inventory_hostname in groups['cinder-volume'] or
+        inventory_hostname in groups['cinder-scheduler'] or
+        inventory_hostname in groups['cinder-backup']

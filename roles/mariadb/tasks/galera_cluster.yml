@@ -1,0 +1,7 @@
+---
+
+- name: Start MySQL
+  service:
+    name: mariadb
+    state: started
+

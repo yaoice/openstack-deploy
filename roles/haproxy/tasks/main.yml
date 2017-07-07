@@ -1,0 +1,10 @@
+---
+
+- include: haproxy_install.yml
+- include: haproxy_config.yml
+- include: haproxy_services.yml
+
+- name: Flush handlers
+  meta: flush_handlers
+
+- include: haproxy_check.yml

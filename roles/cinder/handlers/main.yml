@@ -1,0 +1,25 @@
+---
+
+- name: Restart cinder-api
+  systemd:
+    name: "httpd"
+    state: "restarted"
+    enabled: yes
+
+- name: Restart cinder-scheduler
+  systemd:
+    name: "openstack-cinder-scheduler"
+    state: "restarted"
+    enabled: yes
+
+- name: Restart cinder-volume
+  systemd:
+    name: "openstack-cinder-scheduler"
+    state: "restarted"
+    enabled: yes
+
+- name: Restart cinder-backup
+  systemd:
+    name: "openstack-cinder-backup"
+    state: "restarted"
+    enabled: yes

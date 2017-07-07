@@ -1,0 +1,16 @@
+---
+
+- name: Apply glance config
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "0644"
+    owner: "glance"
+    group: "glance"
+  with_items:
+    - { src: "glance-api.conf.j2", dest: "/etc/glance/glance-api.conf" }
+    - { src: "glance-registry.conf.j2", dest: "/etc/glance/glance-registry.conf" }
+    - { src: "glance-api-paste.ini", dest: "/etc/glance/glance-api-paste.ini" }
+    - { src: "glance-registry-paste.ini", dest: "/etc/glance/glance-registry-paste.ini" }
+  notify:
+    - Restart glance

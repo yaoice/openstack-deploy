@@ -1,0 +1,13 @@
+---
+
+- name: "Ensure haproxy node is started"
+  service:
+    name: haproxy
+    state: started
+    enabled: true
+
+- name: "Ensure keepalived node is started"
+  service:
+    name: keepalived
+    state: started
+    enabled: true

@@ -1,0 +1,15 @@
+- name: "Ensure RabbitMQ nodes [1:] are stopped"
+  service:
+    name: rabbitmq-server
+    state: stopped
+  failed_when: false
+  when: >
+    inventory_hostname != rabbitmq_primary_cluster_node
+
+- name: "Ensure RabbitMQ node [0] is stopped"
+  service:
+    name: rabbitmq-server
+    state: stopped
+  failed_when: false
+  when: >
+    inventory_hostname == rabbitmq_primary_cluster_node

@@ -1,0 +1,13 @@
+---
+
+- name: Neutron checks
+  os_sanity:
+      service: neutron
+      project: service
+      user: "{{ neutron_keystone_user }}"
+      password: "{{ neutron_keystone_password }}"
+      role: admin
+      region_name: "{{ openstack_region_name }}"
+      auth: "{{ openstack_auth }}"
+      endpoint_type: admin
+  run_once: True

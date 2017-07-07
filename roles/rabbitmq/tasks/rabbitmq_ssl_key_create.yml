@@ -1,0 +1,28 @@
+
+- name: Remove self signed cert for regen
+  file:
+    dest: "{{ rabbitmq_ssl_cert }}"
+    state: "absent"
+  when: rabbitmq_ssl_self_signed_regen | bool
+
+# See playbooks/roles/rabbitmq_server/defaults/main.yml to provide custom
+# subject material for certificates or specify a user-provided certificate and
+# key pair.
+- name: Create self-signed ssl cert
+  command: >
+    openssl req -new -nodes -sha256 -x509 -subj
+    "{{ rabbitmq_ssl_self_signed_subject }}"
+    -days 3650
+    -keyout {{ rabbitmq_ssl_key }}
+    -out {{ rabbitmq_ssl_cert }}
+    -extensions v3_ca
+    creates={{ rabbitmq_ssl_cert }}
+
+- name: Ensure rabbitmq user owns the self-signed key and certificate
+  file:
+    path: "{{ item }}"
+    owner: rabbitmq
+    group: rabbitmq
+  with_items:
+    - "{{ rabbitmq_ssl_key }}"
+    - "{{ rabbitmq_ssl_cert }}"

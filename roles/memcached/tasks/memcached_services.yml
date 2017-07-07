@@ -1,0 +1,7 @@
+---
+
+- name: "Ensure memcached node is started"
+  service:
+    name: memcached
+    state: started
+    enabled: true

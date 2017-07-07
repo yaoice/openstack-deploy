@@ -1,0 +1,46 @@
+---
+- name: Creating Nova databases
+  mysql_db:
+    login_host: "{{ database_address }}"
+    login_port: "{{ mariadb_port }}"
+    login_user: "{{ galera_root_user }}"
+    login_password: "{{ galera_root_password }}"
+    name: "{{ item }}"
+  run_once: True
+  delegate_to: "{{ groups['nova-api'][0] }}"
+  with_items:
+    - "{{ nova_database_name }}"
+    - "{{ nova_database_name }}_cell0"
+    - "{{ nova_api_database_name }}"
+
+- name: Creating Nova databases user and setting permissions
+  mysql_user:
+    login_host: "{{ database_address }}"
+    login_port: "{{ mariadb_port }}"
+    login_user: "{{ galera_root_user }}"
+    login_password: "{{ galera_root_password }}"
+    name: "{{ item.database_username }}"
+    password: "{{ item.database_password }}"
+    host: "%"
+    priv: "{{ item.database_name }}.*:ALL"
+    append_privs: "yes"
+  with_items:
+    - database_name: "{{ nova_database_name }}"
+      database_username: "{{ nova_database_user }}"
+      database_password: "{{ nova_database_password }}"
+    - database_name: "{{ nova_database_name }}_cell0"
+      database_username: "{{ nova_database_user }}"
+      database_password: "{{ nova_database_password }}"
+    - database_name: "{{ nova_api_database_name }}"
+      database_username: "{{ nova_api_database_user }}"
+      database_password: "{{ nova_api_database_password }}"
+  run_once: True
+  delegate_to: "{{ groups['nova-api'][0] }}"
+
+- name: Perform a Nova DB sync
+  shell: nova-manage db sync && nova-manage api_db sync && nova-manage db online_data_migrations
+  changed_when: False
+  become: yes
+  become_user: nova
+  run_once: True
+  delegate_to: "{{ groups['nova-api'][0] }}"

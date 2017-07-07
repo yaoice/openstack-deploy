@@ -1,0 +1,12 @@
+- name: Apply mariadb config
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "0644"
+  with_items:
+    - { src: "my.cnf.j2", dest: "/etc/my.cnf" }
+    - { src: "redhat.cnf.j2", dest: "/etc/redhat.cnf" }
+  notify:
+    - Stop mysql
+    - Start first mysql
+    - Start other mysql

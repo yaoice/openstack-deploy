@@ -1,0 +1,61 @@
+[DEFAULT]
+debug = {{ glance_logging_debug }}
+
+# NOTE(elemoine) log_dir alone does not work for Glance
+log_file = /var/log/glance/api.log
+use_forwarded_for = true
+
+bind_host = {{ api_interface_address }}
+bind_port = {{ glance_api_port }}
+workers = {{ openstack_service_workers }}
+
+registry_host = {{ internal_vip_address }}
+
+{% if enable_ceph | bool %}
+show_image_direct_url= True
+show_multiple_locations = True
+{% endif %}
+
+cinder_catalog_info = volume:cinder:internalURL
+
+transport_url = rabbit://{% for host in groups['rabbitmq'] %}{{ rabbitmq_user }}:{{ rabbitmq_password }}@{{ hostvars[host]['ansible_' + hostvars[host]['api_interface']]['ipv4']['address'] }}:{{ rabbitmq_port }}{% if not loop.last %},{% endif %}{% endfor %}
+
+[database]
+connection = mysql+pymysql://{{ glance_database_user }}:{{ glance_database_password }}@{{ glance_database_address }}/{{ glance_database_name }}
+max_retries = -1
+
+[keystone_authtoken]
+auth_uri = {{ internal_protocol }}://{{ internal_vip_address }}:{{ keystone_public_port }}
+auth_url = {{ admin_protocol }}://{{ internal_vip_address }}:{{ keystone_admin_port }}
+auth_type = password
+project_domain_id = default
+user_domain_id = default
+project_name = service
+username = {{ glance_keystone_user }}
+password = {{ glance_keystone_password }}
+
+memcache_security_strategy = ENCRYPT
+memcache_secret_key = {{ memcache_secret_key }}
+memcached_servers = {% for host in groups['memcached'] %}{{ hostvars[host]['ansible_' + hostvars[host]['api_interface']]['ipv4']['address'] }}:{{ memcached_port }}{% if not loop.last %},{% endif %}{% endfor %}
+
+[paste_deploy]
+flavor = keystone
+
+[glance_store]
+{% if enable_ceph | bool and glance_backend_ceph | bool %}
+default_store = rbd
+stores = rbd,http
+rbd_store_user = glance
+rbd_store_pool = {{ ceph_glance_pool_name }}
+rbd_store_chunk_size = 8
+{% else %}
+default_store = file
+filesystem_store_datadir = /var/lib/glance/images/
+{% endif %}
+
+[oslo_messaging_notifications]
+{% if enable_ceilometer | bool or enable_searchlight | bool %}
+driver = messagingv2
+{% else %}
+driver = noop
+{% endif %}

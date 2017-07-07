@@ -1,0 +1,50 @@
+---
+
+- name: Gather variables for each operating system
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ role_path }}/../ceph/vars/redhat.yml"
+  when:
+    - (enable_ceph | bool) and (glance_backend_ceph | bool)
+    - inventory_hostname in groups['ceph-mon'] or
+      inventory_hostname in groups['glance-api'] or
+      inventory_hostname in groups['glance-registry']
+
+- include: glance_ceph.yml
+  when:
+    - (enable_ceph | bool) and (glance_backend_ceph | bool)
+    - inventory_hostname in groups['ceph-mon'] or
+      inventory_hostname in groups['glance-api'] or
+      inventory_hostname in groups['glance-registry']
+
+- include: glance_external_ceph.yml
+  when:
+    - (enable_ceph | bool == False) and (glance_backend_ceph | bool)
+    - inventory_hostname in groups['glance-api'] or
+      inventory_hostname in groups['glance-registry']
+
+- include: glance_install.yml
+  when: inventory_hostname in groups['glance-api'] or
+        inventory_hostname in groups['glance-registry']
+
+- include: glance_register.yml
+  when: inventory_hostname in groups['glance-api']
+
+- include: glance_config.yml
+  when: inventory_hostname in groups['glance-api'] or
+        inventory_hostname in groups['glance-registry']
+
+- include: glance_db.yml
+  when: inventory_hostname in groups['glance-api']
+
+- include: glance_services.yml
+  when: inventory_hostname in groups['glance-api'] or
+        inventory_hostname in groups['glance-registry']
+
+- name: Flush handlers
+  meta: flush_handlers
+
+- include: glance_check.yml
+  when: inventory_hostname in groups['glance-api'] or
+        inventory_hostname in groups['glance-registry']
+

@@ -1,0 +1,14 @@
+---
+
+- name: Ensuring ceph config directory exists
+  file:
+    path: "/etc/ceph"
+    state: directory
+  when: inventory_hostname in groups['glance-api']
+
+- name: Apply ceph config
+  copy:
+    src: "{{ item }}"
+    dest: "/etc/ceph/"
+  with_fileglob:
+    - "ceph*"

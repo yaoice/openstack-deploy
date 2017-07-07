@@ -1,0 +1,13 @@
+---
+
+- name: Ensuring ceph config directory exists
+  file:
+    path: "/etc/ceph"
+    state: directory
+
+- name: Apply ceph config
+  copy:
+    src: "{{ item }}"
+    dest: "/etc/ceph/"
+  with_fileglob:
+    - "ceph*"

@@ -1,0 +1,34 @@
+---
+
+glance_package_state: "present"
+
+###################
+# Ceph
+####################
+ceph_glance_pool_type: "{{ ceph_pool_type }}"
+ceph_glance_cache_mode: "{{ ceph_cache_mode }}"
+
+# Due to Ansible issues on include, you cannot override these variables. Please
+# override the variables they reference instead.
+glance_pool_name: "{{ ceph_glance_pool_name }}"
+glance_pool_type: "{{ ceph_glance_pool_type }}"
+glance_cache_mode: "{{ ceph_glance_cache_mode }}"
+
+
+####################
+# Database
+####################
+glance_database_name: "glance"
+glance_database_address: "{{ internal_vip_address }}:{{ mariadb_port }}"
+
+glance_admin_endpoint: "{{ admin_protocol }}://{{ internal_vip_address }}:{{ glance_api_port }}"
+glance_internal_endpoint: "{{ internal_protocol }}://{{ internal_vip_address }}:{{ glance_api_port }}"
+glance_public_endpoint: "{{ public_protocol }}://{{ external_vip_address }}:{{ glance_api_port }}"
+
+glance_logging_debug: "{{ openstack_logging_debug }}"
+
+glance_distro_packages:
+  - openstack-glance
+  - python-oslo-vmware
+  - python-rados
+  - python-rbd

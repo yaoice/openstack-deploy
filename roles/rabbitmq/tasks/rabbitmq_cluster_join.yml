@@ -1,0 +1,26 @@
+- name: Check cluster status
+  shell: |
+    rabbitmqctl -q cluster_status | grep '{cluster_name,<<"{{ rabbitmq_cluster_name }}">>}'
+  changed_when: result.rc != 0
+  failed_when: false
+  register: result
+
+- name: Stop rabbitmq app
+  shell: |
+    rabbitmqctl stop_app; sleep 5
+  failed_when: false
+  when: result.rc != 0
+
+- name: Join rabbitmq cluster
+  shell: |
+    rabbitmqctl join_cluster "rabbit@{{ rabbitmq_primary_cluster_node.split('.')[0] }}"
+  when: result.rc != 0
+  register: rabbit_join_cluster
+  until: rabbit_join_cluster|success
+  retries: 5
+  delay: 2
+
+- name: Start rabbitmq app
+  shell: |
+    rabbitmqctl start_app
+  when: result.rc != 0

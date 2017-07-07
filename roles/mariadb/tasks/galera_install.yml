@@ -1,0 +1,41 @@
+---
+
+#Note: Install Mariadb 10.1.20-1 will need mariadb-libs-10.1.20
+- name: Update mariadb libs
+  yum: name=mariadb-libs state=latest disablerepo=percona-release-x86_64
+
+- name: Install galera_server packages
+  package:
+    name: "{{ item }}"
+    state: "{{ galera_package_state }}" 
+  register: install_packages
+  until: install_packages | success
+  retries: 3
+  delay: 2
+  with_items:
+    - "{{ galera_distro_packages }}"
+
+- name: Enable mysql to start at boot
+  service:
+    name: "mariadb"
+    enabled: "yes"
+
+- name: "Update root user, connections, and grant options"
+  shell: |
+    sed -i -r "s/(bind-address)=.*/\1={{ api_interface_address }}/g" /etc/my.cnf.d/* && \
+    service mariadb start && \
+    # Setup the root user for MySQL
+    mysql -u root -h {{ api_interface_address }} -e "UPDATE mysql.user SET Password=PASSWORD('$rootpass') WHERE User='root';" && \
+    mysql -u root -h {{ api_interface_address }} -e "DELETE FROM mysql.user WHERE user='';" && \
+    mysql -u root -h {{ api_interface_address }} -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('%', 'localhost', '127.0.0.1', '::1');" && \
+    mysql -u root -h {{ api_interface_address }} -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%';" && \
+    mysql -u root -h {{ api_interface_address }} -e "GRANT ALL PRIVILEGES ON *.* TO '{{ galera_root_user }}'@'localhost' IDENTIFIED BY '{{ galera_root_password }}' WITH GRANT OPTION;" && \
+    mysql -u root -h {{ api_interface_address }} -e "GRANT ALL PRIVILEGES ON *.* TO '{{ galera_root_user }}'@'127.0.0.1' IDENTIFIED BY '{{ galera_root_password }}' WITH GRANT OPTION;" && \
+    mysql -u root -h {{ api_interface_address }} -e "GRANT ALL PRIVILEGES ON *.* TO '{{ galera_root_user }}'@'::1' IDENTIFIED BY '{{ galera_root_password }}' WITH GRANT OPTION;" && \
+    mysql -u root -h {{ api_interface_address }} -e "GRANT ALL PRIVILEGES ON *.* TO '{{ galera_root_user }}'@'%' IDENTIFIED BY '{{ galera_root_password }}' WITH GRANT OPTION;" && \
+    mysql -u root -h {{ api_interface_address }} -e "FLUSH PRIVILEGES;" && \
+    # Create a marker file to ensure this script is not run again
+    touch /etc/my.cnf.d/rhel_configured && \
+    service mariadb stop
+  args:
+    creates: /etc/my.cnf.d/rhel_configured

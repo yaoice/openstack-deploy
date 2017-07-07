@@ -1,0 +1,9 @@
+
+- include: horizon_install.yml
+
+- include: horizon_config.yml
+
+- include: horizon_services.yml
+
+- name: Flush handlers
+  meta: flush_handlers

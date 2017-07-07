@@ -1,0 +1,7 @@
+---
+
+- name: "Ensure chronyd noe is started"
+  service:
+    name: chronyd
+    state: started
+    enabled: true

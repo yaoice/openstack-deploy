@@ -1,0 +1,7 @@
+# {{ ansible_managed }}
+RABBITMQ_NODENAME=rabbit
+
+# Set ERLANG VM parameters
+RABBITMQ_IO_THREAD_POOL_SIZE={{ rabbitmq_async_threads }}
+RABBITMQ_SERVER_ERL_ARGS="+P {{ rabbitmq_process_limit }}"
+export ERL_EPMD_PORT={{ rabbitmq_epmd_port }}

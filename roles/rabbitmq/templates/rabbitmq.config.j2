@@ -1,0 +1,30 @@
+[
+  {kernel, [
+    {inet_dist_listen_min, {{ rabbitmq_cluster_port }}},
+    {inet_dist_listen_max, {{ rabbitmq_cluster_port }}}
+  ]},
+  {rabbit, [
+    {loopback_users, []},
+    {tcp_listeners, [
+      {"{{ api_interface_address }}", {{ rabbitmq_port }}}
+    ]},
+    {ssl_listeners, [{"{{ api_interface_address }}", {{ rabbitmq_ssl_port }}}]},
+    {collect_statistics_interval, {{ rabbitmq_collect_statistics_interval }} },
+    {ssl_options, [{certfile,"{{ rabbitmq_ssl_cert }}"},
+                   {keyfile,"{{ rabbitmq_ssl_key }}"},
+                   {% if rabbitmq_user_ssl_ca_cert is defined -%}
+                   {cacertfile,"{{ rabbitmq_ssl_ca_cert }}"},
+                   {% endif -%}
+                   {versions, ['tlsv1.2', 'tlsv1.1']},
+                   {verify,verify_none},
+                   {fail_if_no_peer_cert,false}]},
+    {% if rabbitmq_cluster_partition_handling != 'ignore' %}{cluster_partition_handling, {{ rabbitmq_cluster_partition_handling }}}{% endif %}
+  ]},
+  {rabbitmq_management, [
+    {rates_mode, {{ rabbitmq_management_rates_mode }}},
+    {listener, [
+      {ip, "{{ api_interface_address }}"},
+      {port, {{ rabbitmq_management_port }}}
+    ]}
+   ]}
+].

@@ -1,0 +1,63 @@
+---
+
+- name: Create cinder dir
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "cinder"
+    group: "cinder"
+    mode: 0755
+  with_items:
+    - "/var/log/cinder"
+    - "/var/www/cgi-bin/cinder"
+
+- name: Comment Listen config in httpd.conf
+  lineinfile:
+    path: "{{ item.path }}"
+    state: absent
+    regexp: "{{ item.regexp }}"
+  with_items:
+    - { path: "/etc/httpd/conf/httpd.conf", regexp: "^Listen 80" }
+    - { path: "/etc/httpd/conf.d/ssl.conf", regexp: "^Listen 443" }
+
+- name: Create cinder wsgi script
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "cinder"
+    group: "cinder"
+    mode: 0755
+    remote_src: true
+  with_items:
+    - { src: "/usr/bin/cinder-wsgi", dest: "/var/www/cgi-bin/cinder/cinder-wsgi" }
+
+- name: Copying over cinder-wsgi.conf
+  vars:
+    service: "{{ cinder_services['cinder-api'] }}"
+  template:
+    src: "cinder-wsgi.conf.j2"
+    dest: "/etc/httpd/conf.d/cinder-wsgi.conf"
+  when:
+    - inventory_hostname in groups[service.group]
+    - service.enabled | bool
+  notify:
+    - Restart cinder-api
+
+- name: Apply cinder conf config
+  vars:
+    service_name: "{{ item.key }}"
+  template:
+    src: "cinder.conf.j2"
+    dest: "/etc/cinder/cinder.conf"
+    mode: "0644"
+    owner: "cinder"
+    group: "cinder"
+  when:
+    - item.value.enabled | bool
+    - inventory_hostname in groups[item.value.group]
+  with_dict: "{{ cinder_services }}"
+  notify:
+    - Restart cinder-api
+    - Restart cinder-scheduler
+    - Restart cinder-volume
+    - Restart cinder-backup
