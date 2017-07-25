@@ -2,7 +2,7 @@
 
 # Core services
 enable_chrony: "yes"
-enable_haproxy: "yes"
+enable_haproxy: "no"
 enable_rabbitmq: "yes"
 enable_mariadb: "yes"
 enable_memcached: "yes"
@@ -12,7 +12,7 @@ enable_neutron: "yes"
 enable_nova: "yes"
 
 # Additional optional services
-enable_ceph: "yes"
+enable_ceph: "no"
 enable_ceph_rgw: "no"
 enable_cinder: "yes"
 enable_cinder_backend_lvm: "no"
@@ -58,8 +58,8 @@ api_interface_address:  "{{ hostvars[inventory_hostname]['ansible_' + api_interf
 # Valid options are [ openvswitch, linuxbridge, sfc ]
 neutron_plugin_agent: "openvswitch"
 
-#internal_vip_address: "{{ api_interface_address }}"
-internal_vip_address: "172.16.214.250"
+internal_vip_address: "{{ api_interface_address }}"
+#internal_vip_address: "172.16.214.250"
 external_vip_address: "{{ internal_vip_address }}"
 
 enable_tls_external: "no"

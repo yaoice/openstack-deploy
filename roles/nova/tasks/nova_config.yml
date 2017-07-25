@@ -1,20 +1,6 @@
 ---
 
-#Note: ensure keystone use os-client-config 1.27.0
-- name: Install shade packages
-  pip:
-    name: "{{ item.name }}"
-    version: "{{ item.version }}"
-    state: "forcereinstall"
-  with_items:
-    - { 'name': os-client-config, 'version': 1.27.0 }
-    - { 'name': requests, 'version': 2.11.1 }
-  register: install_shade
-  until: install_shade|success
-  retries: 5
-  delay: 2
-  run_once: True
-  delegate_to: "{{ groups['keystone'][0] }}"
+- include: ../../shade_version.yml
 
 #Note: ensure keystone use os-client-config 1.27.0
 - name: Ensure os_client_config identity_api_version to 3

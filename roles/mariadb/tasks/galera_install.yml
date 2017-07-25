@@ -2,7 +2,9 @@
 
 #Note: Install Mariadb 10.1.20-1 will need mariadb-libs-10.1.20
 - name: Update mariadb libs
-  yum: name=mariadb-libs state=latest disablerepo=percona-release-x86_64
+  yum: name=mariadb-libs state=latest
+#Note: Use local rpm reposity
+#  yum: name=mariadb-libs state=latest disablerepo=percona-release-x86_64
 
 - name: Install galera_server packages
   package:
