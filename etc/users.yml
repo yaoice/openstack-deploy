@@ -10,6 +10,7 @@ nova_database_user: "nova"
 nova_api_database_user: "nova_api"
 cinder_database_user: "cinder"
 neutron_database_user: "neutron"
+rally_database_user: "rally"
 
 glance_keystone_user: "glance"
 nova_keystone_user: "nova"

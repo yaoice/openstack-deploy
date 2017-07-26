@@ -1,0 +1,10 @@
+---
+
+- include: rally_install.yml
+
+- include: rally_config.yml
+
+- include: rally_db.yml
+
+- name: Flush handlers
+  meta: flush_handlers

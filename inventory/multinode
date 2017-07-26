@@ -76,6 +76,9 @@ ceph
 [ceph-osd:children]
 storage
 
+[rally:children]
+control
+
 [placement:children]
 control
 

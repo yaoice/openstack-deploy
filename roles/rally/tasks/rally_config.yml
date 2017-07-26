@@ -1,0 +1,15 @@
+---
+
+- name: Create rally dir
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+  with_items:
+    - "{{ rally_log_dir }}"
+
+- name: Apply rally conf config
+  template:
+    src: "rally.conf.j2"
+    dest: "/etc/rally/rally.conf"
+    mode: "0644"

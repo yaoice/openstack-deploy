@@ -1,0 +1,16 @@
+---
+
+rally_package_state: "present"
+
+rally_log_dir: "/var/log/rally"
+
+rally_logging_debug: "{{ openstack_logging_debug }}"
+
+####################
+### Database
+######################
+rally_database_name: "rally"
+rally_database_address: "{{ internal_vip_address }}:{{ mariadb_port }}"
+
+rally_distro_packages:
+  - openstack-rally

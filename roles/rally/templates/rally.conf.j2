@@ -1,0 +1,9 @@
+[DEFAULT]
+debug = {{ rally_logging_debug }}
+log_file = rally.log
+use_stderr = False
+log_dir = {{ rally_log_dir }}
+
+[database]
+connection = mysql+pymysql://{{ rally_database_user }}:{{ rally_database_password }}@{{ rally_database_address }}/{{ rally_database_name }}
+max_retries = -1

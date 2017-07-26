@@ -122,3 +122,10 @@
     - { role: horizon,
         tags: horizon,
         when: enable_horizon | bool }
+
+- name: Apply role rally
+  hosts: rally
+  roles:
+    - { role: rally,
+        tags: rally,
+        when: enable_rally | bool }
